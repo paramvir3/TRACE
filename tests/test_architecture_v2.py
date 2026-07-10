@@ -164,6 +164,15 @@ def test_quintic_cutoff_is_c2_at_boundary():
     np.testing.assert_allclose(float(second), 0.0, atol=1e-14)
 
 
+def test_quintic_cutoff_remains_nonnegative_in_float32_near_the_boundary():
+    cutoff = SmoothPolynomialCutoff(3.0)
+    distances = torch.tensor([2.99, 2.999, 2.9999, 3.0, 3.001], dtype=torch.float32)
+    values = cutoff(distances)
+
+    assert torch.all(values >= 0.0)
+    assert values[-2:].eq(0.0).all()
+
+
 def test_full_model_is_continuous_when_an_edge_leaves_the_neighbor_list():
     model = _model(cutoff=3.0)
     energies = []

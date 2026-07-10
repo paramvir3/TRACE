@@ -866,6 +866,13 @@ class TensorialFixedEnvironmentAttentionBlock(nn.Module):
         self.q_tensor = o3.Linear(self.node_irreps, self.score_irreps)
         self.k_tensor = o3.Linear(self.token_irreps, self.score_irreps)
         self.score_channels = sum(mul for mul, _ in self.score_irreps)
+        # Keep only primitive static metadata in the forward path.  e3nn's
+        # Irrep objects intentionally do not implement ``len``; iterating over
+        # them during forward prevents torch.export/AOTInductor capture.
+        self._score_blocks = tuple(
+            (int(multiplicity), int(irrep.dim))
+            for multiplicity, irrep in self.score_irreps
+        )
         self.multipole_score = nn.Linear(self.score_channels, self.num_heads, bias=False)
 
         self.radial_basis = SmoothACERadialBasis(
@@ -933,16 +940,16 @@ class TensorialFixedEnvironmentAttentionBlock(nn.Module):
     ) -> torch.Tensor:
         terms = []
         offset = 0
-        for multiplicity, irrep in self.score_irreps:
-            width = multiplicity * irrep.dim
+        for multiplicity, irrep_dim in self._score_blocks:
+            width = multiplicity * irrep_dim
             q_block = query[:, offset : offset + width].reshape(
-                query.shape[0], multiplicity, irrep.dim
+                query.shape[0], multiplicity, irrep_dim
             )
             k_block = key[:, offset : offset + width].reshape(
-                key.shape[0], multiplicity, irrep.dim
+                key.shape[0], multiplicity, irrep_dim
             )
             terms.append(
-                (q_block[receiver] * k_block).sum(dim=-1) / math.sqrt(irrep.dim)
+                (q_block[receiver] * k_block).sum(dim=-1) / math.sqrt(irrep_dim)
             )
             offset += width
         return torch.cat(terms, dim=-1)

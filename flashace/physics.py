@@ -266,7 +266,11 @@ class SmoothPolynomialCutoff(nn.Module):
 
     def forward(self, distances: torch.Tensor) -> torch.Tensor:
         x = torch.clamp(distances / self.r_max, min=0.0, max=1.0)
-        envelope = 1.0 - 10.0 * x.pow(3) + 15.0 * x.pow(4) - 6.0 * x.pow(5)
+        # This is algebraically identical to
+        # 1 - 10 x^3 + 15 x^4 - 6 x^5, but the factored form avoids
+        # catastrophic cancellation just inside x=1 in float32.  A negative
+        # cutoff would invalidate the non-negative attention normalization.
+        envelope = (1.0 - x).pow(3) * (1.0 + 3.0 * x + 6.0 * x.pow(2))
         return torch.where(distances < self.r_max, envelope, torch.zeros_like(envelope))
 
 

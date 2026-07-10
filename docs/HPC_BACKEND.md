@@ -15,6 +15,37 @@ This distinction is deliberate. Strict physical locality is necessary for
 linear weak scaling, but it is insufficient without a device-resident execution
 path.
 
+## AOT force program
+
+TRACE v3 now has an export-safe deployment adapter in
+`transformers_ace/aot.py`. It replaces the eager e3nn helper modules by the
+same frozen linear maps, Wigner-3j tensor products, squared tensor norms, and
+real spherical harmonics. The adapter is tested against the e3nn model for
+energy, position derivatives, and strain derivatives. It also materializes the
+complete energy/force/virial graph before invoking AOTInductor; no finite
+differences or separately learned force head are introduced.
+
+Compile this artifact only on the target CUDA software stack, using a fixed
+local-plus-ghost atom and directed-edge capacity for one MPI rank:
+
+```bash
+python -m transformers_ace.aot_deploy \
+  --checkpoint model.pt \
+  --output trace_v3_h100.so \
+  --type-map Cs Pb I \
+  --example-structure tests/cspbi3/structures/cubic_alpha_phase.vasp \
+  --max-atoms 125000 \
+  --max-edges 10000000 \
+  --device cuda
+```
+
+The output library and its adjacent metadata file define an exact fixed-shape
+contract for the planned Kokkos pair style. Padding atoms carry zero
+local-energy mask and padding edges lie outside the compact cutoff, so padding
+does not alter energy, forces, or virial. The native Kokkos pair style is still
+the remaining integration step; do not use this AOT library with the current
+`pair_style transformers_ace`, which expects TorchScript.
+
 ## Required production design
 
 A production `pair_style transformers_ace/kk` backend must satisfy all of the

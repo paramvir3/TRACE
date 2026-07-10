@@ -122,6 +122,63 @@ class LAMMPSEnergyModel(nn.Module):
         return energy.reshape(())
 
 
+class LAMMPSAOTForceModel(nn.Module):
+    """Statically exportable TRACE energy, force, and virial program.
+
+    The force and virial are evaluated as derivatives of the same scalar energy
+    as the reference LAMMPS wrapper.  ``torch.func.grad`` is intentionally used
+    here instead of imperative ``autograd.grad`` so AOTInductor can capture the
+    derivative program ahead of time.  A Kokkos CUDA pair style can therefore
+    invoke one compiled program on device-resident buffers without constructing
+    a dynamic autograd graph at every MD step.
+    """
+
+    def __init__(self, energy_model: LAMMPSEnergyModel) -> None:
+        super().__init__()
+        self.energy_model = energy_model
+
+    def forward(
+        self,
+        z: torch.Tensor,
+        pos: torch.Tensor,
+        cell: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_shift: torch.Tensor,
+        strain: torch.Tensor,
+        local_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        def energy_from_pos_and_strain(
+            positions: torch.Tensor,
+            strain_parameters: torch.Tensor,
+        ) -> torch.Tensor:
+            return self.energy_model(
+                z,
+                positions,
+                cell,
+                edge_index,
+                edge_shift,
+                strain_parameters,
+                local_mask,
+            )
+
+        energy = energy_from_pos_and_strain(pos, strain)
+        grad_pos, grad_strain = torch.func.grad(
+            energy_from_pos_and_strain,
+            argnums=(0, 1),
+        )(pos, strain)
+        virial = torch.stack(
+            (
+                -grad_strain[0],
+                -grad_strain[1],
+                -grad_strain[2],
+                -0.5 * grad_strain[3],
+                -0.5 * grad_strain[4],
+                -0.5 * grad_strain[5],
+            )
+        )
+        return energy, -grad_pos, virial
+
+
 def _synthetic_atoms(type_map: Sequence[str], cutoff: float) -> Atoms:
     numbers = [atomic_numbers[symbol] for symbol in type_map]
     spacing = min(max(0.35 * cutoff, 1.5), 3.0)
