@@ -1,4 +1,4 @@
-"""Compile a fixed-capacity TRACE v3 energy/force/virial program for AOTI."""
+"""Compile a fixed-capacity TRACE v3/v4 energy/force/virial program for AOTI."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _metadata(
         (
             "format=transformers_ace_aoti_v1",
             "units=metal",
-            "architecture=trace_v3",
+            "architecture=trace_v3_or_v4",
             f"r_max={float(r_max):.12g}",
             f"max_atoms={int(max_atoms)}",
             f"max_edges={int(max_edges)}",
@@ -55,8 +55,8 @@ def compile_lammps_aot_model(
         raise RuntimeError("CUDA is unavailable; compile this artifact on the H100/B100 target host")
 
     calculator = TransformersACECalculator(model_path=str(checkpoint), device=device)
-    if int(getattr(calculator.model, "architecture_version", 0)) != 3:
-        raise ValueError("AOT LAMMPS deployment currently supports TRACE architecture_version=3 only")
+    if int(getattr(calculator.model, "architecture_version", 0)) not in (3, 4):
+        raise ValueError("AOT LAMMPS deployment currently supports TRACE architecture_version=3 or 4")
     if calculator.model.l_max > 3:
         raise ValueError("AOT LAMMPS deployment currently supports l_max <= 3")
 

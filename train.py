@@ -10,7 +10,7 @@ from ase.io import read
 from ase.data import atomic_numbers, chemical_symbols
 from e3nn import o3
 from flashace.checkpoint import load_checkpoint
-from flashace.model import TransformersACE, TransformersACEV3
+from flashace.model import TransformersACE, TransformersACEV3, TransformersACEV4
 from flashace.optim import build_optimizer, optimizer_group_summary
 from flashace.plotting import plot_metric_history
 from ase.neighborlist import neighbor_list
@@ -87,6 +87,9 @@ def save_checkpoint(path, epoch, model, optimizer, scheduler, scaler, config, en
             'attention_dropout': config.get('attention_dropout', config.get('transformer_dropout', 0.0)),
             'attention_layer_scale_init': config.get('attention_layer_scale_init', 1e-2),
             'attention_distance_penalty': config.get('attention_distance_penalty', True),
+            'attention_num_shells': config.get('attention_num_shells', 4),
+            'correlation_rank_initial': config.get('correlation_rank_initial', None),
+            'correlation_rank_warmup_epochs': config.get('correlation_rank_warmup_epochs', 0),
         }
     }
     torch.save(checkpoint, path)
@@ -503,10 +506,12 @@ def main():
         model_class = TransformersACE
     elif architecture_version == 3:
         model_class = TransformersACEV3
+    elif architecture_version == 4:
+        model_class = TransformersACEV4
     else:
-        raise ValueError("architecture_version must be 2 or 3 for training")
+        raise ValueError("architecture_version must be 2, 3, or 4 for training")
 
-    model = model_class(
+    model_kwargs = dict(
         r_max=config['r_max'], l_max=config['l_max'], num_radial=config['num_radial'],
         hidden_dim=config['hidden_dim'], num_layers=config['num_layers'],
         radial_basis_type=config.get('radial_basis_type', 'bessel'),
@@ -524,7 +529,13 @@ def main():
         correlation_channels=config.get('correlation_channels', 16),
         use_aux_force_head=False,
         use_aux_stress_head=False,
-    ).to(device)
+    )
+    if architecture_version == 4:
+        model_kwargs.update(
+            attention_num_shells=config.get('attention_num_shells', 4),
+            correlation_rank_initial=config.get('correlation_rank_initial', None),
+        )
+    model = model_class(**model_kwargs).to(device)
     
     optimizer = build_optimizer(model, config)
     print(f"Optimizer: {config.get('optimizer', 'adam')}")
@@ -721,6 +732,16 @@ def main():
     
     force_loss_ema = None
     for epoch in range(start_epoch, config['epochs']):
+        if architecture_version == 4:
+            max_rank = int(model.ace.irreps_correlation[0].mul)
+            initial_rank = int(config.get('correlation_rank_initial') or max_rank)
+            rank_warmup = max(0, int(config.get('correlation_rank_warmup_epochs', 0)))
+            if rank_warmup > 0:
+                fraction = min(1.0, float(epoch + 1) / float(rank_warmup))
+                active_rank = round(initial_rank + fraction * (max_rank - initial_rank))
+            else:
+                active_rank = max_rank
+            model.set_correlation_rank(active_rank)
         force_weight = _force_weight(epoch)
         stress_weight = _stress_weight(epoch)
         model.train()

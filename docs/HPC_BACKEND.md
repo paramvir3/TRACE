@@ -17,7 +17,7 @@ path.
 
 ## AOT force program
 
-TRACE v3 now has an export-safe deployment adapter in
+TRACE v3/v4 have an export-safe deployment adapter in
 `transformers_ace/aot.py`. It replaces the eager e3nn helper modules by the
 same frozen linear maps, Wigner-3j tensor products, squared tensor norms, and
 real spherical harmonics. The adapter is tested against the e3nn model for
@@ -90,4 +90,6 @@ The backend is not allowed to claim production H100 scaling until it passes:
 
 Until these gates pass, the native pair style should be used for correctness,
 small-to-medium simulations, and LAMMPS/PLUMED workflow validation rather than
-as evidence of million-atom performance.
+as evidence of million-atom performance. The phrase "million-atom H100/B100
+ready" is reserved for a backend that passes every gate above at the intended
+system size, not for an exported model alone.

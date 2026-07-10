@@ -32,7 +32,7 @@ class LAMMPSEnergyModel(nn.Module):
     ) -> None:
         super().__init__()
         self.architecture_version = int(getattr(model, "architecture_version", 0))
-        if self.architecture_version not in (2, 3):
+        if self.architecture_version not in (2, 3, 4):
             raise ValueError("LAMMPSEnergyModel supports TRACE architecture versions 2 and 3")
         self.hidden_dim = int(model.hidden_dim)
         self.emb = model.emb
@@ -232,8 +232,8 @@ def export_lammps_model(
 ) -> None:
     calculator = TransformersACECalculator(model_path=str(checkpoint), device=device)
     model = calculator.model.eval()
-    if int(getattr(model, "architecture_version", 0)) not in (2, 3):
-        raise ValueError("Native LAMMPS export supports architecture_version=2 or 3 checkpoints")
+    if int(getattr(model, "architecture_version", 0)) not in (2, 3, 4):
+        raise ValueError("Native LAMMPS export supports architecture_version=2, 3, or 4 checkpoints")
     for parameter in model.parameters():
         parameter.requires_grad_(False)
 

@@ -10,6 +10,7 @@ from .physics import (
     ACE_Descriptor,
     ACEV2Descriptor,
     ACEV3TokenDescriptor,
+    ACEV4CumulantTokenDescriptor,
     ACERadialBasis,
     SmoothACERadialBasis,
 )
@@ -1013,6 +1014,105 @@ class TensorialFixedEnvironmentAttentionBlock(nn.Module):
         return self._apply_scalar_ffn(x + update)
 
 
+class CumulantMultiQueryTensorialAttentionBlock(TensorialFixedEnvironmentAttentionBlock):
+    """v4 local cross-attention with shared tensor values and invariant gates.
+
+    Heads retain independent scalar and multipole queries/keys, while a single
+    equivariant tensor product supplies the token value.  This removes the
+    v3 ``num_heads``-fold tensor-product cost without introducing a sender
+    hidden-state dependency.  Additive smooth shell logits are equivalent to a
+    multiplicative shell factor before the per-center softmax.
+    """
+
+    def __init__(self, *args, num_shells: int = 4, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.num_shells = max(1, int(num_shells))
+        self.shared_value_tp = o3.FullyConnectedTensorProduct(
+            self.node_irreps, self.token_irreps, self.node_irreps,
+            internal_weights=True, shared_weights=True,
+        )
+        del self.value_tp
+        self.value_head_gate = nn.Linear(self.hidden_dim, self.num_heads)
+        centers = torch.linspace(0.0, self.radial_basis.cutoff.r_max, self.num_shells)
+        self.register_buffer("shell_centers", centers)
+        self.shell_log_width = nn.Parameter(torch.zeros(self.num_shells))
+        self.shell_bias = nn.Linear(self.num_shells, self.num_heads, bias=False)
+
+        self._non_scalar_blocks = tuple(
+            (int(multiplicity), int(irrep.dim))
+            for multiplicity, irrep in self.non_scalar_irreps
+        )
+        self._non_scalar_multiplicities = sum(multiplicity for multiplicity, _ in self._non_scalar_blocks)
+        if self._non_scalar_multiplicities:
+            invariant_dim = int(self.scalar_norm.normalized_shape[0])
+            self.tensor_swiglu = nn.Sequential(
+                nn.LayerNorm(invariant_dim),
+                nn.Linear(invariant_dim, 2 * self._non_scalar_multiplicities),
+            )
+            # Identity initialization provides a conservative starting point.
+            nn.init.zeros_(self.tensor_swiglu[-1].weight)
+            nn.init.zeros_(self.tensor_swiglu[-1].bias)
+        else:
+            self.tensor_swiglu = None
+
+    def _shell_features(self, token_length: torch.Tensor, token_cutoff: torch.Tensor) -> torch.Tensor:
+        width = F.softplus(self.shell_log_width).clamp_min(1e-4)
+        distances = token_length[:, None] - self.shell_centers[None, :]
+        return torch.exp(-0.5 * (distances / width[None, :]).square()) * token_cutoff[:, None]
+
+    def _apply_scalar_ffn(self, x: torch.Tensor) -> torch.Tensor:
+        scalars, rest = x[:, : self.hidden_dim], x[:, self.hidden_dim :]
+        invariants = torch.cat((scalars, self.non_scalar_norm(rest)), dim=-1)
+        scalar_update = self.scalar_ffn(self.scalar_norm(invariants))
+        if self.layer_scale_ffn is not None:
+            scalar_update = scalar_update * self.layer_scale_ffn
+        if self.tensor_swiglu is None:
+            return torch.cat((scalars + scalar_update, rest), dim=-1)
+
+        first, second = self.tensor_swiglu(invariants).chunk(2, dim=-1)
+        gates = 0.1 * torch.tanh(F.silu(first) * second)
+        blocks, feature_offset, gate_offset = [], 0, 0
+        for multiplicity, irrep_dim in self._non_scalar_blocks:
+            width = multiplicity * irrep_dim
+            block = rest[:, feature_offset : feature_offset + width].reshape(-1, multiplicity, irrep_dim)
+            gate = gates[:, gate_offset : gate_offset + multiplicity].unsqueeze(-1)
+            blocks.append((block * (1.0 + gate)).reshape(-1, width))
+            feature_offset += width
+            gate_offset += multiplicity
+        return torch.cat((scalars + scalar_update, *blocks), dim=-1)
+
+    def forward(
+        self, x, token_features, token_receiver, token_length, token_cutoff,
+        token_kind, temperature_scale: float = 1.0,
+    ):
+        x_norm = self.node_norm(x)
+        q_scalar = self.q_scalar(x_norm[:, : self.hidden_dim]).view(-1, self.num_heads, self.key_dim)
+        token_scalars = self.token_scalar_norm(token_features[:, : self.token_scalar_dim])
+        token_scalars = token_scalars + self.token_kind_embedding(token_kind)
+        k_scalar = self.k_scalar(token_scalars).view(-1, self.num_heads, self.key_dim)
+        logits = (q_scalar[token_receiver] * k_scalar).sum(dim=-1) / math.sqrt(self.key_dim)
+        q_tensor, k_tensor = self.q_tensor(x_norm), self.k_tensor(token_features)
+        logits = logits + self.multipole_score(self._multipole_invariants(q_tensor, k_tensor, token_receiver))
+        logits = logits + self.radial_bias(self.radial_basis(token_length))
+        logits = logits + self.shell_bias(self._shell_features(token_length, token_cutoff))
+        if self.distance_log_scale is not None:
+            logits = logits - F.softplus(self.distance_log_scale)[None, :] * token_length[:, None]
+        logits = logits / max(float(temperature_scale), 1e-4)
+        alpha = self.dropout(_fixed_token_cutoff_softmax(logits, token_receiver, token_cutoff, x.shape[0]))
+
+        # The coefficient is scalar and center-local; only the fixed token
+        # enters the shared equivariant value tensor product.
+        values = self.shared_value_tp(x_norm[token_receiver], token_features)
+        head_gate = torch.sigmoid(self.value_head_gate(x_norm[:, : self.hidden_dim]))
+        coefficient = (alpha * head_gate[token_receiver]).mean(dim=-1, keepdim=True)
+        update = torch.zeros_like(x)
+        update.index_add_(0, token_receiver, coefficient.to(values.dtype) * values)
+        update = self.out_proj(update)
+        if self.layer_scale_attn is not None:
+            update = update * self.layer_scale_attn
+        return self._apply_scalar_ffn(x + update)
+
+
 class InvariantIrrepReadout(nn.Module):
     """Energy readout from scalar channels and explicit tensor norms."""
 
@@ -1219,6 +1319,76 @@ class TransformersACEV3(nn.Module):
                 )
                 S = stress / volume
         return E, F, S, {}
+
+
+class TransformersACEV4(TransformersACEV3):
+    """TRACE v4: connected local ACE tokens and shared-value cross-attention.
+
+    TRACE v4 preserves v3's finite receptive field: each atom attends only to
+    fixed descriptors of its original local environment.  It deliberately does
+    not exchange hidden states between atoms and is therefore not a graph
+    message-passing architecture.
+    """
+
+    architecture_version = 4
+
+    def __init__(
+        self,
+        *args,
+        attention_num_shells: int = 4,
+        correlation_rank_initial: int | None = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.ace = ACEV4CumulantTokenDescriptor(
+            r_max=self.r_max,
+            l_max=self.l_max,
+            num_radial=kwargs.get("num_radial", 8),
+            hidden_dim=self.hidden_dim,
+            correlation_order=kwargs.get("correlation_order", 4),
+            correlation_channels=kwargs.get("correlation_channels", 16),
+            radial_basis_type=kwargs.get("radial_basis_type", "bessel"),
+            radial_trainable=kwargs.get("radial_trainable", False),
+            gaussian_width=kwargs.get("gaussian_width", 0.5),
+            radial_mlp_hidden=kwargs.get("radial_mlp_hidden", 32),
+            radial_mlp_layers=kwargs.get("radial_mlp_layers", 2),
+        )
+        self.attention_irreps = self.ace.irreps_out
+        attention_heads = max(1, int(kwargs.get("attention_num_heads") or kwargs.get("transformer_num_heads", 4)))
+        attention_hidden = kwargs.get("attention_ffn_hidden") or kwargs.get("transformer_ffn_hidden")
+        attention_dropout = kwargs.get("attention_dropout", 0.0)
+        if attention_dropout == 0.0 and kwargs.get("transformer_dropout", 0.0) != 0.0:
+            attention_dropout = kwargs["transformer_dropout"]
+        self.layers = nn.ModuleList(
+            [
+                CumulantMultiQueryTensorialAttentionBlock(
+                    node_irreps=self.attention_irreps,
+                    token_irreps=self.ace.irreps_correlation,
+                    hidden_dim=self.hidden_dim,
+                    token_scalar_dim=self.ace.irreps_correlation[0].mul,
+                    r_max=self.r_max,
+                    num_radial=kwargs.get("num_radial", 8),
+                    num_token_kinds=self.ace.num_moment_tokens + 1,
+                    num_heads=attention_heads,
+                    key_dim=kwargs.get("attention_key_dim"),
+                    ffn_hidden=attention_hidden,
+                    dropout=float(attention_dropout),
+                    layer_scale_init=kwargs.get("attention_layer_scale_init", 1e-2),
+                    radial_basis_type=kwargs.get("radial_basis_type", "bessel"),
+                    radial_trainable=kwargs.get("radial_trainable", False),
+                    gaussian_width=kwargs.get("gaussian_width", 0.5),
+                    use_distance_penalty=kwargs.get("attention_distance_penalty", True),
+                    num_shells=attention_num_shells,
+                )
+                for _ in range(len(self.layers))
+            ]
+        )
+        self.readout = InvariantIrrepReadout(self.attention_irreps, self.hidden_dim)
+        if correlation_rank_initial is not None:
+            self.ace.set_correlation_rank(correlation_rank_initial)
+
+    def set_correlation_rank(self, rank: int) -> None:
+        self.ace.set_correlation_rank(rank)
 
 
 # The historical project name now points to v2 for newly created models. The
