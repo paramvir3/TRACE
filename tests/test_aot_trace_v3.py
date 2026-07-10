@@ -23,11 +23,11 @@ def _inputs():
     )
 
 
-def _model():
+def _model(l_max=2):
     torch.manual_seed(17)
     model = TransformersACEV3(
         r_max=4.0,
-        l_max=2,
+        l_max=l_max,
         num_radial=3,
         hidden_dim=8,
         num_layers=1,
@@ -88,3 +88,14 @@ def test_aot_trace_force_graph_is_static_and_padding_is_physically_null():
     graph_output = graph(*padded)
     for actual, expected in zip(graph_output, padded_output):
         torch.testing.assert_close(actual, expected, atol=4e-6, rtol=4e-6)
+
+
+def test_export_safe_tensor_algebra_supports_all_configured_angular_limits():
+    inputs = _inputs()
+    for l_max in (0, 1, 2, 3):
+        source = _model(l_max=l_max)
+        reference = LAMMPSEnergyModel(source).eval()
+        converted = LAMMPSEnergyModel(make_aot_compatible(source)).eval()
+        expected = reference(*inputs)
+        actual = converted(*inputs)
+        torch.testing.assert_close(actual, expected, atol=3e-6, rtol=3e-6)

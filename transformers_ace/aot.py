@@ -179,6 +179,8 @@ class ExportableSquaredNorm(nn.Module):
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         batch = features.shape[0]
+        if not self.blocks:
+            return features.new_empty((batch, 0))
         values = []
         for (multiplicity, _, irrep_dim), (start, stop) in zip(self.blocks, self.slices):
             block = features[:, start:stop].reshape(batch, multiplicity, irrep_dim)
