@@ -31,6 +31,9 @@ class LAMMPSEnergyModel(nn.Module):
         energy_shift_per_atom: float = 0.0,
     ) -> None:
         super().__init__()
+        self.architecture_version = int(getattr(model, "architecture_version", 0))
+        if self.architecture_version not in (2, 3):
+            raise ValueError("LAMMPSEnergyModel supports TRACE architecture versions 2 and 3")
         self.hidden_dim = int(model.hidden_dim)
         self.emb = model.emb
         self.ace = model.ace
@@ -74,25 +77,40 @@ class LAMMPSEnergyModel(nn.Module):
         )
         edge_len = torch.norm(edge_vec, dim=1)
 
-        h, edge_features, cutoff = self.ace(
-            self.emb(z),
-            edge_index,
-            edge_vec,
-            edge_len,
-            return_edge_features=True,
-        )
-        receiver = edge_index[1]
-        for layer in self.layers:
-            h = layer(
-                h,
-                edge_features,
-                receiver,
+        if self.architecture_version == 2:
+            h, edge_features, cutoff = self.ace(
+                self.emb(z),
+                edge_index,
+                edge_vec,
                 edge_len,
-                cutoff,
-                temperature_scale=1.0,
+                return_edge_features=True,
             )
-
-        atomic_energy = self.readout(h[:, : self.hidden_dim]).view(-1)
+            receiver = edge_index[1]
+            for layer in self.layers:
+                h = layer(
+                    h,
+                    edge_features,
+                    receiver,
+                    edge_len,
+                    cutoff,
+                    temperature_scale=1.0,
+                )
+            atomic_energy = self.readout(h[:, : self.hidden_dim]).view(-1)
+        else:
+            h, tokens, receiver, token_length, token_cutoff, token_kind = self.ace(
+                self.emb(z), edge_index, edge_vec, edge_len
+            )
+            for layer in self.layers:
+                h = layer(
+                    h,
+                    tokens,
+                    receiver,
+                    token_length,
+                    token_cutoff,
+                    token_kind,
+                    temperature_scale=1.0,
+                )
+            atomic_energy = self.readout(h).view(-1)
         mask = local_mask.to(dtype=atomic_energy.dtype)
         energy = torch.sum(atomic_energy * mask)
 
@@ -157,8 +175,8 @@ def export_lammps_model(
 ) -> None:
     calculator = TransformersACECalculator(model_path=str(checkpoint), device=device)
     model = calculator.model.eval()
-    if int(getattr(model, "architecture_version", 0)) != 2:
-        raise ValueError("Native LAMMPS export currently supports architecture_version=2 checkpoints")
+    if int(getattr(model, "architecture_version", 0)) not in (2, 3):
+        raise ValueError("Native LAMMPS export supports architecture_version=2 or 3 checkpoints")
     for parameter in model.parameters():
         parameter.requires_grad_(False)
 

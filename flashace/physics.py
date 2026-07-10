@@ -471,3 +471,116 @@ class ACEV2Descriptor(nn.Module):
         if return_edge_features:
             return output, edge_features, cutoff
         return output
+
+
+class ACEV3TokenDescriptor(ACEV2Descriptor):
+    """Fixed local ACE environment encoder for TRACE v3.
+
+    The descriptor creates two immutable token families for every center atom:
+    directed neighbor-density edge tokens and one projected ACE correlation token
+    for each retained body order.  Both depend only on the input species and
+    geometry inside the cutoff.  They never depend on a state updated by an
+    attention block, which is the locality constraint used by TRACE v3.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.num_moment_tokens = self.correlation_order - 1
+        self.moment_token_proj = nn.ModuleList(
+            [
+                o3.Linear(self.irreps_out, self.irreps_correlation)
+                for _ in range(self.num_moment_tokens)
+            ]
+        )
+
+    def forward(
+        self,
+        node_attrs: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_vec: torch.Tensor,
+        edge_len: torch.Tensor,
+    ):
+        density, edge_features, cutoff = self._density(
+            node_attrs,
+            edge_index,
+            edge_vec,
+            edge_len,
+        )
+
+        non_scalar_dim = self.irreps_out_dim - self.hidden_dim
+        center = torch.cat(
+            (
+                self.center_proj(node_attrs),
+                node_attrs.new_zeros((node_attrs.shape[0], non_scalar_dim)),
+            ),
+            dim=-1,
+        )
+
+        correlation = density
+        ordered_features = []
+        first_order = self.order_mix[0](correlation)
+        ordered_features.append(first_order)
+        output = center + first_order
+
+        for contraction, mix in zip(self.contractions, self.order_mix[1:]):
+            correlation = contraction(correlation, density)
+            ordered = mix(correlation)
+            ordered_features.append(ordered)
+            output = output + ordered
+
+        moment_tokens = [
+            projection(ordered)
+            for projection, ordered in zip(self.moment_token_proj, ordered_features)
+        ]
+        num_nodes = node_attrs.shape[0]
+        device = node_attrs.device
+        dtype = edge_len.dtype
+        receiver = edge_index[1]
+
+        token_features = torch.cat([edge_features, *moment_tokens], dim=0)
+        moment_receiver = torch.arange(num_nodes, device=device, dtype=receiver.dtype).repeat(
+            self.num_moment_tokens
+        )
+        token_receiver = torch.cat((receiver, moment_receiver), dim=0)
+        token_length = torch.cat(
+            (
+                edge_len,
+                torch.zeros(
+                    num_nodes * self.num_moment_tokens,
+                    device=device,
+                    dtype=dtype,
+                ),
+            ),
+            dim=0,
+        )
+        token_cutoff = torch.cat(
+            (
+                cutoff,
+                torch.ones(
+                    num_nodes * self.num_moment_tokens,
+                    device=device,
+                    dtype=cutoff.dtype,
+                ),
+            ),
+            dim=0,
+        )
+        token_kind = torch.cat(
+            (
+                torch.zeros(receiver.shape[0], device=device, dtype=torch.long),
+                torch.arange(
+                    1,
+                    self.num_moment_tokens + 1,
+                    device=device,
+                    dtype=torch.long,
+                ).repeat_interleave(num_nodes),
+            ),
+            dim=0,
+        )
+        return (
+            output,
+            token_features,
+            token_receiver,
+            token_length,
+            token_cutoff,
+            token_kind,
+        )

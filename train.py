@@ -10,7 +10,7 @@ from ase.io import read
 from ase.data import atomic_numbers, chemical_symbols
 from e3nn import o3
 from flashace.checkpoint import load_checkpoint
-from flashace.model import TransformersACE
+from flashace.model import TransformersACE, TransformersACEV3
 from flashace.optim import build_optimizer, optimizer_group_summary
 from flashace.plotting import plot_metric_history
 from ase.neighborlist import neighbor_list
@@ -58,7 +58,7 @@ def save_checkpoint(path, epoch, model, optimizer, scheduler, scaler, config, en
         'scheduler_state_dict': scheduler.state_dict() if scheduler is not None else None,
         'scaler_state_dict': scaler.state_dict() if scaler is not None else None,
         'config': {
-            'architecture_version': 2,
+            'architecture_version': int(model.architecture_version),
             'r_max': config['r_max'],
             'l_max': config['l_max'],
             'num_radial': config['num_radial'],
@@ -498,7 +498,15 @@ def main():
                               collate_fn=AtomisticDataset.collate_fn, num_workers=num_workers)
 
     print("--- Initializing Transformers-ACE ---")
-    model = TransformersACE(
+    architecture_version = int(config.get('architecture_version', 2))
+    if architecture_version == 2:
+        model_class = TransformersACE
+    elif architecture_version == 3:
+        model_class = TransformersACEV3
+    else:
+        raise ValueError("architecture_version must be 2 or 3 for training")
+
+    model = model_class(
         r_max=config['r_max'], l_max=config['l_max'], num_radial=config['num_radial'],
         hidden_dim=config['hidden_dim'], num_layers=config['num_layers'],
         radial_basis_type=config.get('radial_basis_type', 'bessel'),
@@ -598,11 +606,11 @@ def main():
         print(f"--- Loading checkpoint from {resume_path} ---")
         checkpoint = load_checkpoint(resume_path, map_location=device)
         checkpoint_version = int(checkpoint.get('config', {}).get('architecture_version', 1))
-        if checkpoint_version != TransformersACE.architecture_version:
+        if checkpoint_version != architecture_version:
             raise ValueError(
                 f"Cannot resume architecture v{checkpoint_version} weights in the "
-                f"v{TransformersACE.architecture_version} model. Start a new v2 run; "
-                "the calculator can still evaluate the legacy checkpoint."
+                f"v{architecture_version} model. Start a matching architecture run; "
+                "the calculator can still evaluate older checkpoints."
             )
         model.load_state_dict(checkpoint['model_state_dict'])
 

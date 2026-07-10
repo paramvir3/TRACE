@@ -3,7 +3,7 @@ import numpy as np
 from ase.calculators.calculator import Calculator, all_changes
 from ase.neighborlist import neighbor_list
 from .checkpoint import load_checkpoint
-from .model import LegacyTransformersACE, TransformersACE
+from .model import LegacyTransformersACE, TransformersACE, TransformersACEV3
 
 
 def _load_checkpoint(path, map_location):
@@ -59,6 +59,8 @@ class TransformersACECalculator(Calculator):
             model_class = LegacyTransformersACE
         elif architecture_version == 2:
             model_class = TransformersACE
+        elif architecture_version == 3:
+            model_class = TransformersACEV3
         else:
             raise ValueError(f"Unsupported architecture_version: {architecture_version}")
         radial_mlp_default = 64 if architecture_version == 1 else 32

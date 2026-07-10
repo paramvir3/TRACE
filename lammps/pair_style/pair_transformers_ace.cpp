@@ -9,6 +9,7 @@
 #include "neigh_list.h"
 #include "neigh_request.h"
 #include "neighbor.h"
+#include "update.h"
 
 #include <algorithm>
 #include <cmath>
@@ -220,6 +221,9 @@ void PairTransformersACE::coeff(int narg, char **arg)
 void PairTransformersACE::init_style()
 {
   if (!model_loaded_) error->all(FLERR, "pair_coeff must be set before pair_style transformers_ace");
+  if (strcmp(update->unit_style, "metal") != 0) {
+    error->all(FLERR, "pair_style transformers_ace requires 'units metal' (eV and Angstrom)");
+  }
   if (comm->nprocs > 1 && !force->newton_pair) {
     error->all(FLERR, "parallel pair_style transformers_ace requires 'newton on' so ghost-atom forces are reverse-communicated");
   }
