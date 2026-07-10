@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import copy
 import math
-import shutil
 from pathlib import Path
 
 import torch
@@ -297,24 +296,34 @@ def compile_aot_force_program(
     inputs: tuple[torch.Tensor, ...],
     output: Path,
 ) -> Path:
-    """Compile a fixed-shape energy/force/virial program into an AOTI library.
+    """Compile a fixed-shape energy/force/virial program into an AOTI package.
 
     ``make_fx`` materializes the functional derivative graph before invoking
     Inductor.  This avoids the current ``torch.export`` limitation for
-    ``torch.func.grad`` and produces one callable AOT model-container library.
+    ``torch.func.grad`` and produces one callable ``.pt2`` model package.
+    The documented C++ ``AOTIModelPackageLoader`` consumes this package rather
+    than the raw shared library returned by ``aot_compile``.
     Compilation must be run on the target CUDA software stack, since CUDA AOT
     kernels are architecture- and toolkit-specific.
     """
     from torch.fx.experimental.proxy_tensor import make_fx
     from torch._inductor import aot_compile
+    from torch._inductor.package import package_aoti
 
     graph = make_fx(program)(*inputs)
     # ``make_fx`` records FakeTensor instances from more than one tracing mode;
     # AOTInductor expects to construct its own mode from real example tensors.
     for node in graph.graph.nodes:
         node.meta.clear()
-    artifact = Path(aot_compile(graph, inputs))
     output = output.expanduser().resolve()
+    if output.suffix != ".pt2":
+        raise ValueError("AOT LAMMPS deployment output must end in .pt2")
     output.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(artifact, output)
+    # ``torch.export`` cannot capture this functional derivative graph on all
+    # supported PyTorch releases. Package the already-static FX graph directly.
+    # PyTorch 2.12 returns a single artifact while newer versions return a list.
+    artifacts = aot_compile(graph, inputs, options={"max_autotune": True})
+    if isinstance(artifacts, (str, Path)):
+        artifacts = [str(artifacts)]
+    package_aoti(str(output), artifacts)
     return output

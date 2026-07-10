@@ -31,7 +31,7 @@ local-plus-ghost atom and directed-edge capacity for one MPI rank:
 ```bash
 python -m transformers_ace.aot_deploy \
   --checkpoint model.pt \
-  --output trace_v3_h100.so \
+  --output trace_v3_h100.pt2 \
   --type-map Cs Pb I \
   --example-structure tests/cspbi3/structures/cubic_alpha_phase.vasp \
   --max-atoms 125000 \

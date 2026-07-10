@@ -94,7 +94,7 @@ def compile_lammps_aot_model(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True, help="Output AOTI shared library, e.g. trace_v3.so")
+    parser.add_argument("--output", type=Path, required=True, help="Output AOTI package, e.g. trace_h100.pt2")
     parser.add_argument("--type-map", nargs="+", required=True)
     parser.add_argument("--max-atoms", type=int, required=True, help="Maximum local-plus-ghost atoms per MPI rank")
     parser.add_argument("--max-edges", type=int, required=True, help="Maximum directed local edges per MPI rank")
