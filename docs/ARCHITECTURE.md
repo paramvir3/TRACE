@@ -38,14 +38,16 @@ Their sum is permutation invariant with respect to the neighbors of center `i`:
 A_i = sum_j a_ij.
 ```
 
-`A_i` is body order two. Learned Clebsch-Gordan tensor products recursively
-construct higher body-order correlations:
+`A_i` has maximum neighbor body order two. Learned Clebsch-Gordan tensor
+products recursively construct higher *maximum* body-order correlations:
 
 ```text
 C_i^(2) = A_i,
 C_i^(nu+1) = CG(C_i^(nu), A_i),       2 <= nu < correlation_order.
 ```
 
+Because products of a neighbor density include repeated-neighbor terms, these
+are correlation-degree features rather than a pure body-order decomposition.
 Independent learned multiplicity weights are retained in every contraction.
 The old all-ones contraction, which made copies of an irrep rank deficient, is
 not used in v2. Each body order is linearly projected to the node irreps and
@@ -127,10 +129,10 @@ stress-weight ramp are unchanged from the validated v1 training path.
 Architecture version 3 retains the same periodic geometry, cutoff, ACE density,
 and energy-derived observables, but replaces v2 attention with a fixed-
 environment cross-attention decoder. It receives directed edge-density tokens
-and one fixed projected token for each retained ACE body order. The center state
-can query and tensor-product with those tokens, but no updated state from atom
-`j` may enter the key or value path. The dedicated derivation and runnable
-configurations are in [TRACE_V3.md](TRACE_V3.md).
+and one fixed projected token for each retained ACE correlation degree. The
+center state can query and tensor-product with those tokens, but no updated
+state from atom `j` may enter the key or value path. The dedicated derivation
+and runnable configurations are in [TRACE_V3.md](TRACE_V3.md).
 
 ## Default version-2 dimensions
 

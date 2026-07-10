@@ -194,6 +194,11 @@ void PairTransformersACE::coeff(int narg, char **arg)
   lammps_type_to_z_.assign(ntypes + 1, -1);
   if (comm->me == 0) {
     std::cout << "Transformers-ACE: loading " << model_path << " on " << device_ << "\n";
+    if (device_.is_cuda()) {
+      std::cout << "Transformers-ACE: CUDA uses the validated LibTorch interface; "
+                << "the current path transfers host tensors and is not the "
+                << "GPU-resident million-atom backend.\n";
+    }
     std::cout << "Transformers-ACE type mapping:\n";
   }
   for (int itype = 1; itype <= ntypes; itype++) {

@@ -103,6 +103,34 @@ def test_v3_energy_and_forces_are_rotation_equivariant():
     )
 
 
+def test_v3_energy_is_translation_inversion_and_permutation_invariant():
+    model = _model()
+    positions = torch.tensor(
+        [[0.1, 0.2, 0.3], [1.2, 0.4, 0.7], [0.5, 1.3, 0.8], [0.8, 0.7, 1.7]]
+    )
+    energy, forces, _, _ = model(_data(positions), training=False, compute_stress=False)
+
+    translated_energy, translated_forces, _, _ = model(
+        _data(positions + torch.tensor([2.3, -1.1, 0.4])),
+        training=False,
+        compute_stress=False,
+    )
+    np.testing.assert_allclose(float(translated_energy.detach()), float(energy.detach()), atol=3e-5)
+    np.testing.assert_allclose(translated_forces.detach(), forces.detach(), atol=3e-4)
+
+    inverted_energy, inverted_forces, _, _ = model(
+        _data(-positions), training=False, compute_stress=False
+    )
+    np.testing.assert_allclose(float(inverted_energy.detach()), float(energy.detach()), atol=3e-5)
+    np.testing.assert_allclose(inverted_forces.detach(), -forces.detach(), atol=3e-4)
+
+    # Atoms 2 and 3 have the same species, so their relabeling cannot change E.
+    permutation = torch.tensor([0, 1, 3, 2])
+    permuted = _data(positions[permutation])
+    permuted_energy, _, _, _ = model(permuted, training=False, compute_stress=False)
+    np.testing.assert_allclose(float(permuted_energy.detach()), float(energy.detach()), atol=3e-5)
+
+
 def test_v3_stress_matches_symmetric_finite_difference():
     model = _model()
     positions = torch.tensor(
@@ -111,14 +139,19 @@ def test_v3_stress_matches_symmetric_finite_difference():
     data = _data(positions)
     _, _, stress, _ = model(data, training=False, compute_stress=True)
     step = 1.0e-3
-    deformation = torch.eye(3)
-    deformation[0, 1] = deformation[1, 0] = step
-    inverse = torch.eye(3)
-    inverse[0, 1] = inverse[1, 0] = -step
-    e_plus = model(_data(positions @ deformation), training=False, compute_stress=False)[0]
-    e_minus = model(_data(positions @ inverse), training=False, compute_stress=False)[0]
-    derivative = float(((e_plus - e_minus) / (2.0 * step * data["volume"])).detach())
-    np.testing.assert_allclose(derivative, 2.0 * float(stress[0, 1].detach()), rtol=3e-2, atol=4e-4)
+    for a, b in ((0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)):
+        plus = torch.eye(3)
+        minus = torch.eye(3)
+        plus[a, b] = plus[a, b] + step
+        minus[a, b] = minus[a, b] - step
+        if a != b:
+            plus[b, a] = plus[b, a] + step
+            minus[b, a] = minus[b, a] - step
+        e_plus = model(_data(positions @ plus), training=False, compute_stress=False)[0]
+        e_minus = model(_data(positions @ minus), training=False, compute_stress=False)[0]
+        derivative = float(((e_plus - e_minus) / (2.0 * step * data["volume"])).detach())
+        expected = float(stress[a, b].detach()) * (2.0 if a != b else 1.0)
+        np.testing.assert_allclose(derivative, expected, rtol=3e-2, atol=4e-4)
 
 
 def test_v3_lammps_wrapper_supports_position_and_strain_gradients():
