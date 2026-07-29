@@ -31,8 +31,16 @@ training/plots/*
 
 # Generated document build artifacts
 output/pdf/*.aux
+output/pdf/*.bbl
+output/pdf/*.blg
+output/pdf/*.fdb_latexmk
+output/pdf/*.fls
 output/pdf/*.log
+output/pdf/*Notes.bib
 output/pdf/*.out
+output/pdf/manuscript_versions/
+output/overleaf/
+tmp/
 
 # Generated CsPbI3 relaxation workspaces
 tests/cspbi3/alpha/
@@ -54,3 +62,10 @@ tests/cspbi3/results/*
 # Machine-specific benchmark configuration
 flashace_cspbi3_50.yaml
 training/subsample_extxyz.py
+
+# Generated thermodynamic-integration and enhanced-sampling trajectories
+tests/cspbi3/free_energy_ti*/runs/
+training_examples/active_learning_metadynamics/.download_cache/
+training_examples/active_learning_metadynamics/*/evaluation/
+training_examples/active_learning_metadynamics/*/models/
+training_examples/active_learning_metadynamics/*/results/
