@@ -64,11 +64,10 @@ Muon on transformer hidden matrices with auxiliary AdamW for embeddings,
 readout layers, radial/tensor-product support weights, biases, normalization
 weights, and other non-hidden parameters.
 
-The equations, locality definition, body-order convention, and checkpoint
-versioning are described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-The complete paper-style methods section is provided as
-[LaTeX source](docs/TRANSFORMERS_ACE_METHODS.tex) and a
-[rendered PDF](output/pdf/transformers_ace_methods.pdf).
+Muon uses `muon_ns_dtype: "auto"` by default: Newton--Schulz arithmetic stays
+at the model precision on CPU and uses BF16 on CUDA hardware that supports it,
+matching the reference Muon throughput path. Set `muon_ns_dtype: "float32"`
+when an exactly FP32 optimizer trajectory is required.
 
 ## ASE Calculator
 
@@ -201,3 +200,22 @@ Transformers-ACE was developed with assistance from OpenAI Codex.
 ## License
 
 See [LICENSE](LICENSE).
+
+## Citation
+
+[![arXiv](https://img.shields.io/badge/arXiv-2607.25652-b31b1b.svg)](https://arxiv.org/abs/2607.25652)
+
+If you use TRACE in your research, please cite:
+
+```bibtex
+@misc{ahlawat2026trace,
+  title         = {Transformer Atomic Cluster Expansion: TRACE},
+  author        = {Ahlawat, Paramvir},
+  year          = {2026},
+  eprint        = {2607.25652},
+  archivePrefix = {arXiv},
+  primaryClass  = {cond-mat.mtrl-sci},
+  doi           = {10.48550/arXiv.2607.25652},
+  url           = {https://arxiv.org/abs/2607.25652}
+}
+```

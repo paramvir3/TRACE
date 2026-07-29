@@ -5,8 +5,12 @@ Transformers-ACE has two LAMMPS routes:
 - a native `pair_style transformers_ace` for standalone LAMMPS runs;
 - a Python `fix external` bridge for rapid validation/debugging.
 
-For standalone molecular dynamics, rare-event sampling, and large systems, use
-the native pair style.
+For standalone molecular dynamics and rare-event sampling, use the native pair
+style. It is the validated native interface, but its present LibTorch CUDA path
+constructs host tensors and transfers them at every step. It is therefore not
+the production GPU backend for million-atom H100 simulations. The required
+GPU-resident backend and acceptance tests are specified in
+[HPC_BACKEND.md](HPC_BACKEND.md).
 
 ## Native Pair Style
 
@@ -27,10 +31,11 @@ pair_style      transformers_ace device cuda
 pair_style      transformers_ace device cuda:0
 ```
 
-`auto` is the production default. It uses CUDA when the LibTorch build can see
-GPUs and maps each MPI process to `local_rank % visible_gpu_count`. In cluster
-launchers, set `CUDA_VISIBLE_DEVICES` so each node exposes the GPUs assigned to
-the job.
+`auto` uses CUDA when the LibTorch build can see GPUs and maps each MPI process
+to `local_rank % visible_gpu_count`. This mapping is correct for functional
+MPI/GPU execution, but it does not remove the per-step host-device copies or
+dynamic autograd graph in the current implementation. In cluster launchers, set
+`CUDA_VISIBLE_DEVICES` so each node exposes the GPUs assigned to the job.
 
 LAMMPS does not load the training checkpoint directly. First export a
 TorchScript deploy model:

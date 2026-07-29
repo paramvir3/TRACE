@@ -21,7 +21,8 @@ dataset:
 
 configuration:
   path: training/config.yaml
-  sha256: ab4e178039bfba8e3511db960fac3ba79650bd35f6b263c74b6a8478f84e3ebf
+  sha256_at_run: ab4e178039bfba8e3511db960fac3ba79650bd35f6b263c74b6a8478f84e3ebf
+  current_sha256: b0ac5b5195e5d9b1008349f0dfb481f394b06d0dfe20f8e21122ff2adbdc13ce
   architecture_version: 2
   l_max: 2
   r_max: 6.0
@@ -31,7 +32,7 @@ configuration:
   optimizer: muon
   muon_parameter_mode: hidden
   muon_momentum: 0.95
-  muon_newton_schulz_steps: 5
+  muon_ns_steps: 5
   muon_nesterov: true
   muon_aux_optimizer: adamw
   energy_weight: 1.0
@@ -82,6 +83,7 @@ environment:
 notes:
   - The published checkpoint contains optimizer state and scheduler state.
   - The checkpoint config stores model architecture and energy-shift metadata; training optimizer settings are recorded in training/config.yaml and this manifest.
+  - After the run, training/config.yaml gained the explicit muon_ns_dtype=auto setting; the run-time configuration hash is retained above, and CPU behavior is unchanged because auto selects float32 on CPU.
   - The larger source trajectory training_examples/muon/training_cspbi3.extxyz is intentionally not tracked.
 
 reproducibility:

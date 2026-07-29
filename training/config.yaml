@@ -51,6 +51,7 @@ weight_decay: 0.00001
 amsgrad: true
 muon_momentum: 0.95
 muon_ns_steps: 5
+muon_ns_dtype: "auto"            # CUDA uses BF16 like the Muon reference; CPU keeps FP32
 muon_nesterov: true
 muon_parameter_mode: "hidden"    # Muon for transformer hidden matrices only
 muon_include: []

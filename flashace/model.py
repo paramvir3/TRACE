@@ -9,6 +9,28 @@ from e3nn import o3
 from .physics import ACE_Descriptor, ACEV2Descriptor, ACERadialBasis, SmoothACERadialBasis
 
 
+def _irrepwise_layer_scale(
+    scale: torch.Tensor,
+    blocks: tuple[tuple[int, int], ...],
+) -> torch.Tensor:
+    """Tie a legacy componentwise layer scale within each irrep copy.
+
+    A scalar multiplier may differ between copies of an irrep, but it must be
+    identical for every magnetic component of one copy to commute with O(3).
+    The stored parameter shape is retained for checkpoint compatibility.
+    """
+    pieces = []
+    offset = 0
+    for multiplicity, irrep_dim in blocks:
+        width = multiplicity * irrep_dim
+        copy_scale = scale[offset : offset + width].reshape(multiplicity, irrep_dim)
+        pieces.append(
+            copy_scale.mean(dim=-1, keepdim=True).expand(-1, irrep_dim).reshape(-1)
+        )
+        offset += width
+    return torch.cat(pieces)
+
+
 def _segment_softmax(logits: torch.Tensor, index: torch.Tensor, num_nodes: int) -> torch.Tensor:
     """Softmax over incoming local edges for each receiver atom."""
     if logits.numel() == 0:
@@ -117,6 +139,9 @@ class LocalEquivariantAttentionBlock(nn.Module):
             if layer_scale_init is not None
             else None
         )
+        self._layer_scale_blocks = tuple(
+            (int(multiplicity), int(irrep.dim)) for multiplicity, irrep in self.irreps
+        )
 
         ffn_hidden = ffn_hidden or hidden_dim * 4
         self.norm2 = nn.LayerNorm(hidden_dim)
@@ -165,7 +190,9 @@ class LocalEquivariantAttentionBlock(nn.Module):
         out = out / self.num_heads
         out = self.out_proj(out)
         if self.layer_scale_attn is not None:
-            out = out * self.layer_scale_attn
+            out = out * _irrepwise_layer_scale(
+                self.layer_scale_attn, self._layer_scale_blocks
+            )
         x = x + out
 
         scalars = x[..., : self.hidden_dim]
@@ -504,6 +531,10 @@ class StrictLocalEquivariantAttentionBlock(nn.Module):
             if layer_scale_init is not None
             else None
         )
+        self._layer_scale_blocks = tuple(
+            (int(multiplicity), int(irrep.dim))
+            for multiplicity, irrep in self.node_irreps
+        )
 
         self.non_scalar_irreps = o3.Irreps(self.node_irreps[1:])
         self.non_scalar_norm = o3.Norm(self.non_scalar_irreps, squared=True)
@@ -571,7 +602,9 @@ class StrictLocalEquivariantAttentionBlock(nn.Module):
             )
         update = self.out_proj(update / self.num_heads)
         if self.layer_scale_attn is not None:
-            update = update * self.layer_scale_attn
+            update = update * _irrepwise_layer_scale(
+                self.layer_scale_attn, self._layer_scale_blocks
+            )
         x = x + update
 
         return self._apply_scalar_ffn(x)

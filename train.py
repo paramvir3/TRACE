@@ -173,7 +173,11 @@ class AtomisticDataset(Dataset):
         z = torch.tensor(atoms.numbers, dtype=torch.long)
         pos = torch.tensor(atoms.positions, dtype=torch.float32)
         cell = torch.tensor(atoms.cell.array, dtype=torch.float32)
-        vol = torch.tensor(atoms.get_volume(), dtype=torch.float32)
+        # Gas-phase molecular data normally have no simulation cell. Volume is
+        # used only by the periodic stress path, so a neutral placeholder keeps
+        # energy/force training well-defined without fabricating periodicity.
+        volume = atoms.get_volume() if atoms.cell.rank == 3 else 1.0
+        vol = torch.tensor(volume, dtype=torch.float32)
         
         # Targets
         t_E = torch.tensor(atoms.get_potential_energy(), dtype=torch.float32)
@@ -677,7 +681,9 @@ def main():
         gamma = float(config.get('temperature_force_exponent', 0.0))
         if force_ema is not None and ref > 0.0 and gamma != 0.0:
             scale = (force_ema / ref) ** gamma
-            base = base * torch.tensor(scale, device=device, dtype=amp_dtype if use_amp else torch.float32).item()
+            if isinstance(scale, torch.Tensor):
+                scale = scale.detach().item()
+            base *= float(scale)
         return base
 
     force_consistency_weight = float(config.get('force_consistency_weight', 0.0))
