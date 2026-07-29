@@ -33,15 +33,6 @@ class SourceFile:
         return f"{DOWNLOAD_ROOT}/{self.file_id}"
 
 
-R1_FILES = {
-    "wtmetad": SourceFile(53125547, "r1_wtmetad_al.npz", "e085bfd3693a4e4c5e6c89ef68ecde8e"),
-    "downhill": SourceFile(53125565, "r1_downhill_al.npz", "023f102e0e666ce46c08af9feb54fee0"),
-    "us_test": SourceFile(53125535, "r1_wtmetad_us_test.npz", "a62808d69bae3e71d3e0e216437f9991"),
-    "irc_test": SourceFile(53125526, "r1_wtmetad_irc_test.npz", "68ed230f22eeea0f3e9c42d2bdef8bc0"),
-    "reactant": SourceFile(53125544, "ch3cl_f.xyz", "0a7c35f884b7b728a93c2702e213f3d9"),
-    "transition_state": SourceFile(53125514, "r1_ts.xyz", "bcaa2bb353c08b09bfec93fbe70f71af"),
-}
-
 R2_FILES = {
     "wtmetad": SourceFile(59117249, "r2_wtmetad_al.npz", "f467b7ae9f2f395af500083876ced250"),
     "downhill": SourceFile(59117315, "r2_downhill_al.npz", "65023cab1ad7eb53e26abc11b41952d2"),
@@ -81,28 +72,6 @@ def fetch(source: SourceFile, cache: Path) -> Path:
             f"Checksum mismatch for {source.filename}: expected {source.md5}, got {actual}"
         )
     return destination
-
-
-def unique_element_index(numbers: np.ndarray, atomic_number: int) -> int:
-    indices = np.flatnonzero(np.asarray(numbers, dtype=int) == atomic_number)
-    if len(indices) != 1:
-        raise ValueError(
-            f"Expected one atom with Z={atomic_number}, found {len(indices)}"
-        )
-    return int(indices[0])
-
-
-def r1_coordinate(
-    positions: np.ndarray, numbers: np.ndarray
-) -> Tuple[float, float, float]:
-    # The published IRC archive swaps F and Cl relative to the AL/US archives.
-    # Resolve the atoms by element so the physical CV is independent of ordering.
-    carbon = unique_element_index(numbers, 6)
-    fluorine = unique_element_index(numbers, 9)
-    chlorine = unique_element_index(numbers, 17)
-    r_f = float(np.linalg.norm(positions[carbon] - positions[fluorine]))
-    r_cl = float(np.linalg.norm(positions[carbon] - positions[chlorine]))
-    return r_f, r_cl, r_cl - r_f
 
 
 def r2_coordinate(
@@ -403,18 +372,6 @@ def main() -> None:
     root = Path(__file__).resolve().parent
     cache = (args.cache or (root / ".download_cache")).resolve()
     manifests = {
-        "r1_ch3cl_f": prepare_reaction(
-            root,
-            cache,
-            "r1_ch3cl_f",
-            R1_FILES,
-            r1_coordinate,
-            ("r_C_F_A", "r_C_Cl_A", "cv_r_C_Cl_minus_r_C_F_A"),
-            "cv_r_C_Cl_minus_r_C_F_A",
-            charge=-1,
-            multiplicity=1,
-            validation_fraction=args.validation_fraction,
-        ),
         "r2_methyl_shift": prepare_reaction(
             root,
             cache,
