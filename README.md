@@ -218,4 +218,9 @@ If you use TRACE in your research, please cite:
   doi           = {10.48550/arXiv.2607.25652},
   url           = {https://arxiv.org/abs/2607.25652}
 }
+
+@book{Varshalovich,
+  author  = {Varshalovich, D. A. and Moskalev, A. N. and Khersonskii, V. K.},
+  title   = {Quantum Theory of Angular Momentum: Irreducible Tensors, Spherical Harmonics, Vector Coupling Coefficients, 3nj Symbols}
+}
 ```
