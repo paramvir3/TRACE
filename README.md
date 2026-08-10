@@ -1,4 +1,4 @@
-# Transformers-ACE
+# Transformers-ACE 
 
 Transformers-ACE is a research implementation of local equivariant transformer
 potentials built on Atomic Cluster Expansion (ACE) descriptors. It predicts a
@@ -205,8 +205,6 @@ See [LICENSE](LICENSE).
 
 [![arXiv](https://img.shields.io/badge/arXiv-2607.25652-b31b1b.svg)](https://arxiv.org/abs/2607.25652)
 
-If you use TRACE in your research, please cite:
-
 ```bibtex
 @misc{ahlawat2026trace,
   title         = {Transformer Atomic Cluster Expansion: TRACE},
@@ -218,7 +216,6 @@ If you use TRACE in your research, please cite:
   doi           = {10.48550/arXiv.2607.25652},
   url           = {https://arxiv.org/abs/2607.25652}
 }
-
 @book{Varshalovich,
   author  = {Varshalovich, D. A. and Moskalev, A. N. and Khersonskii, V. K.},
   title   = {Quantum Theory of Angular Momentum: Irreducible Tensors, Spherical Harmonics, Vector Coupling Coefficients, 3nj Symbols}
