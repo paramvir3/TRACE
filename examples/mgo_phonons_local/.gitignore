@@ -1,0 +1,3 @@
+# extracted training data (regenerate with extract_ltc_pbesol.py; see data/README.md) and run outputs
+data/*.xyz
+run/
