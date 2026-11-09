@@ -1,0 +1,134 @@
+# The configuration of the TRACE + electrostatics run shown in README.md (seed 43; seed 42 differs only in `seed` and
+# its checkpoint). For reference: it needs TRACE's electrostatics packages (trace_electrostatics, trace_redox) and the
+# development train.py, which are not yet public. As run:
+# - the training cells' energies were masked (forces only), a feature of the development train.py;
+# - resume_from is the step 28b checkpoint (TRACE + electrostatics trained for 40 epochs on the 4G-HDNNP Au2/MgO(001)
+#   data set), not public;
+# - PRIOR_DATA/MgO_bulk_eps_prior.xyz is one 8-atom MgO cell at a = 4.265 A labelled with the experimental
+#   eps_inf = 2.95 (Sun et al., arXiv:0704.2267, Table I; weight 0.05); PRIOR_DATA/Au_atom_alpha_prior.xyz is one Au
+#   atom labelled with alpha = 36.68 a.u. = 5.4354 A^3 (relativistic coupled cluster, arXiv:2410.01493; weight 0.3).
+amp_dtype: bfloat16
+amsgrad: true
+architecture_version: 2
+atomic_energies: null
+attention_distance_penalty: true
+attention_dropout: 0.03
+attention_ffn_hidden: null
+attention_key_dim: null
+attention_layer_scale_init: 0.01
+attention_num_heads: 2
+aux_force_weight: 0.0
+aux_stress_weight: 0.0
+batch_seeded_rng: true
+batch_size: 1
+batched_graphs: true
+checkpoint_dir: examples/mgo_phonons_electrostatics/run/checkpoints
+checkpoint_interval: 0
+clip_grad_norm: 1.0
+correlation_channels: 16
+correlation_order: 4
+device: cpu
+displacement_prob: 0.0
+displacement_sigma: 0.0
+early_stopping_min_delta: 0.0
+early_stopping_min_epoch: 1
+early_stopping_patience: 0
+electrostatics:
+  config:
+    bond_screening:
+    - 2.0
+    - 2.8
+  dielectric_prior:
+    file: PRIOR_DATA/MgO_bulk_eps_prior.xyz
+    weight: 0.05
+  enabled: true
+  heads:
+    bond_hardness_law: two_level
+  partial_charge_weight: 0.0
+  polarizability_prior:
+    file: PRIOR_DATA/Au_atom_alpha_prior.xyz
+    weight: 0.3
+  redox:
+    anchor: formal
+    couplings: true
+    exclusion: false
+    carrier_band: true
+    fragment_ensemble: diabatic
+    max_charge: 3
+    diabatic_selection: amplitude
+    bond_partition: true
+    carrier_penetration: true
+    carrier_overlap: gordon_kim
+    pauli_table: first_principles
+    carrier_induction: true
+    state_polarizability: true
+    state_polarizability_elements:
+    - 79
+    - 8
+    shift_gate: true
+    frame_polarizability_anchor: true
+    frame_induction_damping: true
+energy_shift_per_atom: null
+energy_weight: 10.0
+epochs: 40
+force_consistency_weight: 0.0
+forces_weight: 1.0
+forces_weight_decay_epochs: 0
+forces_weight_final: 1.0
+gaussian_width: 0.5
+grad_accum_steps: 8
+hidden_dim: 64
+l_max: 2
+learning_rate: 0.001
+lr_min: 5.0e-05
+lr_restart_mult: 1.0
+lr_scheduler_interval: epoch
+lr_scheduler_t_max: 40
+lr_scheduler_use_restarts: false
+lr_warmup_epochs: 0
+lr_warmup_start_factor: 0.1
+model_save_path: examples/mgo_phonons_electrostatics/run/model.pt
+muon_aux_betas:
+- 0.9
+- 0.95
+muon_aux_eps: 1.0e-10
+muon_exclude: []
+muon_include: []
+muon_momentum: 0.95
+muon_nesterov: true
+muon_ns_dtype: auto
+muon_ns_steps: 5
+muon_parameter_mode: hidden
+num_layers: 1
+num_radial: 12
+num_workers: 0
+optimizer: muon
+plot_dir: examples/mgo_phonons_electrostatics/run/plots
+plot_training_curves: true
+precompute_neighbors: true
+r_max: 5.29
+radial_basis_type: bessel
+radial_mlp_hidden: 32
+radial_mlp_layers: 2
+radial_trainable: false
+random_rotation: false
+redox_kT_epochs: 20
+redox_kT_start: 0.5
+resume_from: STEP28B_CHECKPOINT.pt
+save_last_checkpoint: true
+seed: 43
+sobolev_sigma: 0.02
+sobolev_weight: 0.0
+solve_atomic_energies: true
+stress_weight: 0.0
+stress_weight_final: 0.0
+stress_weight_ramp_epochs: 0
+temperature_scale_end: 1.0
+temperature_scale_epochs: 15
+temperature_scale_start: 1.3
+torch_num_interop_threads: 1
+torch_num_threads: 4
+train_file: examples/mgo_phonons_local/data/MgO_PBEsol_ltc_train.xyz
+use_amp: false
+valid_file: examples/mgo_phonons_local/data/MgO_PBEsol_ltc_valid.xyz
+weight_decay: 1.0e-05

@@ -78,6 +78,8 @@ numbers of such a rerun.
     (DFPT) through `--born-from`.
   - With them supplied, the NAC band is as accurate as the no-NAC band, because the NAC is analytic once Z* and ε∞ are
     known.
+- **With electrostatics:** [`../mgo_phonons_electrostatics`](../mgo_phonons_electrostatics) shows, as results only,
+  TRACE with electrostatics on the same data. It predicts its own Z* and ε∞, with a NAC path RMS of 5.8–5.9 cm⁻¹.
 - **One material, one functional, one lattice constant.** This example does not test transferability to surfaces,
   defects, other volumes or charged systems.
 
