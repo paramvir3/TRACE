@@ -37,6 +37,8 @@ At a = 4.21726 Å, on the 64-atom cell:
 
 ![TRACE + electrostatics against PBEsol DFT](mgo_phonons_trace_electrostatics_vs_pbesol.png)
 
+Vector version: [`mgo_phonons_trace_electrostatics_vs_pbesol.pdf`](mgo_phonons_trace_electrostatics_vs_pbesol.pdf).
+
 All values are at a = 4.21726 Å against phonondb PBEsol (mp-1265), frequencies in cm⁻¹. Path RMS is taken over
 Γ–X–K–Γ–L with the frequencies sorted at each q-point.
 
@@ -50,6 +52,7 @@ To recompute the RMS, run this from the repository root:
 
 ```bash
 python examples/mgo_phonons_local/score_bands.py examples/mgo_phonons_electrostatics/bands/seed43
+python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_electrostatics/bands/seed43 "TRACE + electrostatics" out.png --nac-note 'model'"'"'s own $Z^*$, $\epsilon_\infty$'
 ```
 
 ## Reading

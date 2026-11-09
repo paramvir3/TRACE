@@ -25,7 +25,7 @@ python examples/mgo_phonons_local/phonons_model.py examples/mgo_phonons_local/ru
 python examples/mgo_phonons_local/score_bands.py examples/mgo_phonons_local/run/bands_own
 python examples/mgo_phonons_local/score_bands.py examples/mgo_phonons_local/run/bands_dft_born
 python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_own "TRACE local" examples/mgo_phonons_local/run/mgo_phonons_trace_local.png
-python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_dft_born "TRACE local (NAC with DFT's Z*, ε∞)" examples/mgo_phonons_local/run/mgo_phonons_trace_local_vs_pbesol.png
+python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_dft_born "TRACE local (no electrostatics)" examples/mgo_phonons_local/run/mgo_phonons_trace_local_vs_pbesol.png --color "#1F5FA8" --nac-note 'DFT'"'"'s $Z^*$, $\epsilon_\infty$'
 ```
 
 - **Training:** `config.yaml` trains on forces only (`energy_weight: 0`) for 40 epochs of a 100-epoch cosine schedule,
@@ -42,6 +42,8 @@ python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/b
 ## Result
 
 ![TRACE local against PBEsol DFT](mgo_phonons_trace_local_vs_pbesol.png)
+
+Vector version: [`mgo_phonons_trace_local_vs_pbesol.pdf`](mgo_phonons_trace_local_vs_pbesol.pdf).
 
 All values are in cm⁻¹ at a = 4.21726 Å against phonondb PBEsol. Path RMS is taken over Γ–X–K–Γ–L with the frequencies
 sorted at each q-point.
