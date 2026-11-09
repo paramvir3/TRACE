@@ -144,6 +144,42 @@ python tests/cspbi3/evaluate_phases.py \
   --reference minimum
 ```
 
+## Phonons: bulk MgO against DFT
+
+Two examples compare TRACE's phonon band structure of rocksalt MgO with PBEsol DFT (phonondb mp-1265) along
+Γ–X–K–Γ–L. Both models are trained on the same 180 DFT supercells: A. Togo's PBEsol set, NIMS Materials Data
+Repository, CC BY 4.0. Both use the reference calculation's phonopy settings. NAC is the non-analytic correction: the
+long-range dipole term that splits the LO and TO modes at Γ and needs the Born charges Z* and the dielectric constant
+ε∞.
+
+### TRACE local (no electrostatics)
+
+![TRACE local against PBEsol DFT](examples/mgo_phonons_local/mgo_phonons_trace_local_vs_pbesol.png)
+
+- **Without NAC:** the local model reproduces the DFT bands to 1.7 cm⁻¹ RMS.
+- **With NAC:** it has no Born charges, so it has no LO–TO splitting (RMS 54.0 cm⁻¹). With DFT's Z* and ε∞ supplied
+  (panel b) it matches the DFT bands to 1.7 cm⁻¹.
+- **Workflow:** data, training, phonons, scoring and plotting are in
+  [`examples/mgo_phonons_local`](examples/mgo_phonons_local).
+
+### TRACE + electrostatics (results only)
+
+![TRACE + electrostatics against PBEsol DFT](examples/mgo_phonons_electrostatics/mgo_phonons_trace_electrostatics_vs_pbesol.png)
+
+- **Born charges:** TRACE with electrostatics predicts its own Z* and ε∞, so the LO–TO splitting in panel (b) comes from
+  the model itself.
+- **Accuracy:**
+  - The RMS is 3.0 cm⁻¹ without NAC and 5.8 cm⁻¹ with NAC.
+  - LO is 668.7 cm⁻¹ against DFT's 693.9, because ε∞ is 9 % high.
+- **Code:** the electrostatics code is not yet public. See
+  [`examples/mgo_phonons_electrostatics`](examples/mgo_phonons_electrostatics).
+
+| seed 43, a = 4.21726 Å | Z*(Mg) | ε∞ | TO at Γ (cm⁻¹) | LO at Γ (cm⁻¹) | RMS without NAC (cm⁻¹) | RMS with NAC (cm⁻¹) |
+|---|---|---|---|---|---|---|
+| DFT (PBEsol) | 1.979 | 3.242 | 391.0 | 693.9 | — | — |
+| TRACE local | — | — | 391.2 | 694.0 with DFT's Z*, ε∞ | 1.7 | 1.7 with DFT's Z*, ε∞; 54.0 without |
+| TRACE + electrostatics | 1.943 | 3.541 | 396.7 | 668.7 | 3.0 | 5.8 |
+
 ## LAMMPS and PLUMED
 
 Native LAMMPS support is included for rare-event workflow testing. Export a
