@@ -29,8 +29,7 @@ python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/b
 ```
 
 - **Training:** `config.yaml` trains on forces only (`energy_weight: 0`) for 40 epochs of a 100-epoch cosine schedule,
-  with r_max 5.29 Å, batch 1, the Muon optimizer at lr 1e-3, and seed 43. It runs on the CPU in float32 with 4 threads. The seed 43 run below took 97 minutes for its
-  40 epochs with 2 threads on an Apple M2 Pro.
+  with r_max 5.29 Å, batch 1, the Muon optimizer at lr 1e-3, and seed 43. It runs on the CPU in float32 with 4 threads and takes about 36 minutes on an Apple M2 Pro.
 - **Phonons:** `phonons_model.py` uses the reference calculation's phonopy settings:
   - the conventional cell at a = 4.21726 Å;
   - force constants from 0.01 Å displacements in the 2×2×2 conventional supercell (64 atoms), symmetrised;
@@ -65,8 +64,11 @@ checkpoint, which was at epoch 39. Two things differ from this repository's `tra
   so the loss is the same.
 - **Batch order:** it was drawn from a seeded generator that this `train.py` does not have.
 
-Running `config.yaml` here therefore repeats the same training with a different batch order. We have not yet measured the
-numbers of such a rerun.
+Running `config.yaml` here therefore repeats the same training with a different batch order. **The rerun agrees with the
+table to 0.2 cm⁻¹.** We ran `config.yaml` with this repository's `train.py` on 2026-11-09, with 4 threads on an Apple M2 Pro; it
+took 36 minutes and its best checkpoint was at epoch 38:
+- TO 391.4 cm⁻¹, and LO 694.2 cm⁻¹ with DFT's Z* and ε∞;
+- path RMS 1.7 cm⁻¹ without NAC, 53.9 with no Born charges, and 1.7 with DFT's Z* and ε∞.
 
 ## What this does and does not show
 

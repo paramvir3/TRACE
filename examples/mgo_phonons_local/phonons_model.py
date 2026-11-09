@@ -68,7 +68,7 @@ def main():
         born = np.array([np.eye(3) * (b["Z_Mg"] if s == "Mg" else -b["Z_Mg"]) for s in ph.primitive.symbols])
         ph.nac_params = {"born": born, "dielectric": np.eye(3) * b["eps"], "factor": K_E}
         res = gamma(ph, [1, 0, 0])
-        print(f"    with NAC (the model's Z* {b['Z_Mg']:.3f}, eps_inf {b['eps']:.3f}), q -> 0 along [100]: {np.round(res, 1).tolist()}")
+        print(f"    with NAC (Z* {b['Z_Mg']:.3f}, eps_inf {b['eps']:.3f} from {args.born_from}), q -> 0 along [100]: {np.round(res, 1).tolist()}")
         print(f"    TO {res[3]:.1f}, LO {res[5]:.1f} cm^-1")
         ph.run_band_structure(qpoints, path_connections=connections, labels=LABELS, with_eigenvectors=False)
         ph.write_yaml_band_structure(filename=os.path.join(args.out, "band_nac.yaml"))
