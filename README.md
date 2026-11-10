@@ -157,8 +157,9 @@ long-range dipole term that splits the LO and TO modes at Γ and needs the Born 
 ![TRACE local against PBEsol DFT](examples/mgo_phonons_local/mgo_phonons_trace_local_vs_pbesol.png)
 
 - **Without NAC:** the local model reproduces the DFT bands to 1.7 cm⁻¹ RMS.
-- **With NAC:** it has no Born charges, so it has no LO–TO splitting (RMS 54.0 cm⁻¹). With DFT's Z* and ε∞ supplied
-  (panel b) it matches the DFT bands to 1.7 cm⁻¹.
+- **With NAC (panel b):** it has no Born charges, so it has no LO–TO splitting. LO = TO = 391.2 cm⁻¹ against DFT's
+  693.9, and the RMS is 54.0 cm⁻¹. It reaches 1.7 cm⁻¹ only when DFT's own Z* and ε∞ are supplied from outside (table).
+  That splitting comes from DFT, not from the model.
 - **Workflow:** data, training, phonons, scoring and plotting are in
   [`examples/mgo_phonons_local`](examples/mgo_phonons_local).
 
@@ -177,7 +178,7 @@ long-range dipole term that splits the LO and TO modes at Γ and needs the Born 
 | seed 43, a = 4.21726 Å | Z*(Mg) | ε∞ | TO at Γ (cm⁻¹) | LO at Γ (cm⁻¹) | RMS without NAC (cm⁻¹) | RMS with NAC (cm⁻¹) |
 |---|---|---|---|---|---|---|
 | DFT (PBEsol) | 1.979 | 3.242 | 391.0 | 693.9 | — | — |
-| TRACE local | — | — | 391.2 | 694.0 with DFT's Z*, ε∞ | 1.7 | 1.7 with DFT's Z*, ε∞; 54.0 without |
+| TRACE local | — | — | 391.2 | = TO (694.0 with DFT's Z*, ε∞) | 1.7 | 54.0 (1.7 with DFT's Z*, ε∞) |
 | TRACE + electrostatics | 1.943 | 3.541 | 396.7 | 668.7 | 3.0 | 5.8 |
 
 ## LAMMPS and PLUMED

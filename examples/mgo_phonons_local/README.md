@@ -24,8 +24,8 @@ python examples/mgo_phonons_local/phonons_model.py examples/mgo_phonons_local/ru
 python examples/mgo_phonons_local/phonons_model.py examples/mgo_phonons_local/run --a 4.21726 --out examples/mgo_phonons_local/run/bands_dft_born --born-from examples/mgo_phonons_local/reference/MgO_PBEsol_phonondb_born.json
 python examples/mgo_phonons_local/score_bands.py examples/mgo_phonons_local/run/bands_own
 python examples/mgo_phonons_local/score_bands.py examples/mgo_phonons_local/run/bands_dft_born
-python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_own "TRACE local" examples/mgo_phonons_local/run/mgo_phonons_trace_local.png
-python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_dft_born "TRACE local (no electrostatics)" examples/mgo_phonons_local/run/mgo_phonons_trace_local_vs_pbesol.png --color "#1F5FA8" --nac-note 'DFT'"'"'s $Z^*$, $\epsilon_\infty$'
+python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_own "TRACE local (no electrostatics)" examples/mgo_phonons_local/run/mgo_phonons_trace_local_vs_pbesol.png --color "#1F5FA8" --nac-note 'no $Z^*$, so LO = TO'
+python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/bands_dft_born "TRACE local + DFT's Z*, eps" examples/mgo_phonons_local/run/mgo_phonons_trace_local_dft_born.png --color "#1F5FA8" --nac-note 'DFT'"'"'s $Z^*$, $\epsilon_\infty$'
 ```
 
 - **Training:** `config.yaml` trains on forces only (`energy_weight: 0`) for 40 epochs of a 100-epoch cosine schedule,
@@ -44,17 +44,21 @@ python examples/mgo_phonons_local/plot_bands.py examples/mgo_phonons_local/run/b
 
 Vector version: [`mgo_phonons_trace_local_vs_pbesol.pdf`](mgo_phonons_trace_local_vs_pbesol.pdf).
 
+Panel (b) is the model's own band with NAC. The model has no Born charges, so it has no LO–TO splitting: LO = TO =
+391.2 cm⁻¹ at Γ, against DFT's 693.9.
+
 All values are in cm⁻¹ at a = 4.21726 Å against phonondb PBEsol. Path RMS is taken over Γ–X–K–Γ–L with the frequencies
 sorted at each q-point.
 
-| model | TO at Γ (DFT 391.0) | LO at Γ (DFT 693.9) | RMS without NAC | RMS with NAC, no Born charges | RMS with NAC, DFT's Z*, ε∞ |
+| model | TO at Γ (DFT 391.0) | LO at Γ (DFT 693.9) | RMS without NAC | RMS with NAC | DFT's Z*, ε∞ supplied: LO / RMS with NAC |
 |---|---|---|---|---|---|
-| seed 43, epoch 40 (figure) | 391.2 | 694.0 | 1.7 | 54.0 | 1.7 |
-| seed 42, epoch 39 | 392.8 | 694.9 | 2.7 | 53.7 | 2.7 |
+| seed 43, epoch 40 (figure) | 391.2 | = TO | 1.7 | 54.0 | 694.0 / 1.7 |
+| seed 42, epoch 39 | 392.8 | = TO | 2.7 | 53.7 | 694.9 / 2.7 |
 
-- The LO column uses DFT's Z* and ε∞. Without them the model has no LO–TO splitting, so LO = TO.
-- The "no Born charges" column compares the model's band, which has no LO–TO splitting, with DFT's band including the
-  NAC.
+- **LO and RMS with NAC** are the model's own. It has no Born charges, so LO = TO and its NAC band is its no-NAC band.
+  That band is compared with DFT's band including the NAC (panel b).
+- **The last column** applies DFT's Z* and ε∞ to the model's force constants. Its LO–TO splitting comes from DFT and is
+  not a prediction of the model. It shows only that the short-range force constants are right. It is not in the figure.
 
 **How these numbers were made.** The two runs used a development version of `train.py` with this config's settings:
 forces only and 40 epochs of a 100-epoch cosine schedule, with 2 CPU threads (this config sets 4). For seed 42 the table uses the best
@@ -80,8 +84,8 @@ took 36 minutes and its best checkpoint was at epoch 38:
   - A local model has no Born effective charges, so LO = TO at Γ.
   - The LO branch near Γ comes from the long-range dipole field. That needs Z* and ε∞, which here are taken from DFT
     (DFPT) through `--born-from`.
-  - With them supplied, the NAC band is as accurate as the no-NAC band, because the NAC is analytic once Z* and ε∞ are
-    known.
+  - With them supplied (the table's last column), the NAC band is as accurate as the no-NAC band, because the NAC is
+    analytic once Z* and ε∞ are known.
 - **With electrostatics:** [`../mgo_phonons_electrostatics`](../mgo_phonons_electrostatics) shows, as results only,
   TRACE with electrostatics on the same data. It predicts its own Z* and ε∞, with a NAC path RMS of 5.8–5.9 cm⁻¹.
 - **One material, one functional, one lattice constant.** This example does not test transferability to surfaces,
