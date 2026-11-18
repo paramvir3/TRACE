@@ -44,7 +44,8 @@ def test_the_gaussian_of_width_sigma_has_second_moment_three_halves_sigma_square
     expected = (math.pi * sigma**2) ** -1.5 * np.exp(-(r / sigma) ** 2)
     interior = slice(100, -100)
     assert np.max(np.abs(rho[interior] - expected[interior])) <= 1e-5 * expected.max()
-    second = np.trapz(4 * math.pi * r**4 * expected, r)
+    trapezoid = getattr(np, "trapezoid", None) or np.trapz   # numpy >= 2.0 removed trapz
+    second = trapezoid(4 * math.pi * r**4 * expected, r)
     assert abs(second - 1.5 * sigma**2) <= 1e-9
 
 

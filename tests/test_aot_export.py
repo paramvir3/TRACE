@@ -107,12 +107,20 @@ def exported(tmp_path_factory):
             "of this suite. Install a torch new enough to provide "
             "torch._inductor.package to run these."
         )
-    program = _tiny_program()
-    inputs = _tiny_inputs()
-    reference = program(*inputs)
-    package = compile_aot_force_program(
-        program, inputs, tmp_path_factory.mktemp("aot") / "tiny.pt2"
-    )
+    # Module-scoped, so it is built before the per-test dtype isolation of
+    # tests/conftest.py runs: pin the float32 default this deployment path is
+    # written for, whatever an earlier test left, and restore it afterwards.
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float32)
+    try:
+        program = _tiny_program()
+        inputs = _tiny_inputs()
+        reference = program(*inputs)
+        package = compile_aot_force_program(
+            program, inputs, tmp_path_factory.mktemp("aot") / "tiny.pt2"
+        )
+    finally:
+        torch.set_default_dtype(previous)
     return package, inputs, reference
 
 

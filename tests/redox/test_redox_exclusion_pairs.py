@@ -131,7 +131,10 @@ def test_au2_pair_values():
     K = 10 * HARTREE
     assert abs(float(Xi[0, k[-1], k[-1]]) - 4 * K * float(density_overlap(*am, *am, R))) <= 1e-7 * float(Xi[0, k[-1], k[-1]])
     assert abs(float(Xi[0, k[-1], k[0]]) - 2 * K * float(density_overlap(*am, *a0, R))) <= 1e-7 * float(Xi[0, k[-1], k[0]])
-    assert float(Xi[0, k[-1], k[0]]) == float(Xi[0, k[0], k[-1]])
+    # symmetric by construction; the two entries are evaluated in a different order,
+    # so they agree to rounding only: 16 float64 ulps of the value
+    sym = float(Xi[0, k[-1], k[0]])
+    assert abs(sym - float(Xi[0, k[0], k[-1]])) <= 16 * torch.finfo(torch.float64).eps * abs(sym)
     for a, c in [(0, 0), (1, -1), (-1, 1), (1, 1), (1, 0)]:
         assert float(Xi[0, k[a], k[c]]) == 0.0
 
