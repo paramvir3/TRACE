@@ -1,5 +1,19 @@
 # Transformers-ACE 
 
+<!-- BEGIN TRACE-Electrostatics release block -->
+> **TRACE-Electrostatics (branch `trace-electrostatics`).** This branch adds
+> long-range electrostatics, polarisation, charge transfer and redox to TRACE:
+> the packages `trace_electrostatics/` and `trace_redox/`, their hooks in
+> `flashace/` and `train.py`, and the 4G-HDNNP and MgO-phonon benchmark kits.
+> It is a research release: no released model passes all of its pre-registered
+> criteria on both training seeds. Start with
+> [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md) for the status,
+> installation, quick start and benchmarks, and
+> [docs/electrostatics/REPRODUCE.md](docs/electrostatics/REPRODUCE.md) to
+> reproduce the numbers. The rest of this README describes TRACE itself and is
+> unchanged.
+<!-- END TRACE-Electrostatics release block -->
+
 Transformers-ACE is a research implementation of local equivariant transformer
 potentials built on Atomic Cluster Expansion (ACE) descriptors. It predicts a
 single invariant total energy; forces and stresses are obtained by exact energy
