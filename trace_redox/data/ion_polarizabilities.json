@@ -1,0 +1,210 @@
+{
+ "method": "UKS PBE0, X2C spin-free for Z > 36, ANO-RCC + 2 diffuse s,p shells, every O state in the Watson sphere; finite field (F = 2e-3, 1e-3 au) Richardson-extrapolated; tools/electrostatics/ion_polarizabilities.py",
+ "units": "bohr^3",
+ "reliable_if": "richardson_step_bohr3 <= 0.05 * alpha_bohr3",
+ "states": {
+  "O-2": {
+   "Z": 8,
+   "q": -2,
+   "alpha_bohr3": 16.442105873434414,
+   "richardson_step_bohr3": 0.001888276836112368,
+   "reliable": true
+  },
+  "O-1": {
+   "Z": 8,
+   "q": -1,
+   "alpha_bohr3": 7.305457460842941,
+   "richardson_step_bohr3": 0.0002719216091036832,
+   "reliable": true
+  },
+  "O+0": {
+   "Z": 8,
+   "q": 0,
+   "alpha_bohr3": 3.721910735193942,
+   "richardson_step_bohr3": 3.132901468250182e-05,
+   "reliable": true
+  },
+  "O+1": {
+   "Z": 8,
+   "q": 1,
+   "alpha_bohr3": 2.371073637205645,
+   "richardson_step_bohr3": 4.5349213005548466e-06,
+   "reliable": true
+  },
+  "O+2": {
+   "Z": 8,
+   "q": 2,
+   "alpha_bohr3": 1.680585629425609,
+   "richardson_step_bohr3": 6.451989133108664e-06,
+   "reliable": true
+  },
+  "O+3": {
+   "Z": 8,
+   "q": 3,
+   "alpha_bohr3": 1.3416566969870851,
+   "richardson_step_bohr3": 1.461497611080868e-06,
+   "reliable": true
+  },
+  "Na-1": {
+   "Z": 11,
+   "q": -1,
+   "alpha_bohr3": 3547.3711053852426,
+   "richardson_step_bohr3": 2157.1620564373525,
+   "reliable": false
+  },
+  "Na+0": {
+   "Z": 11,
+   "q": 0,
+   "alpha_bohr3": 166.7882819485881,
+   "richardson_step_bohr3": 0.12836575492519842,
+   "reliable": true
+  },
+  "Na+1": {
+   "Z": 11,
+   "q": 1,
+   "alpha_bohr3": 1.0310536507608374,
+   "richardson_step_bohr3": 3.4000450011006933e-06,
+   "reliable": true
+  },
+  "Na+2": {
+   "Z": 11,
+   "q": 2,
+   "alpha_bohr3": 0.6367713892163355,
+   "richardson_step_bohr3": 7.647797865772965e-06,
+   "reliable": true
+  },
+  "Na+3": {
+   "Z": 11,
+   "q": 3,
+   "alpha_bohr3": 0.4736450611730815,
+   "richardson_step_bohr3": 3.8738339700842655e-07,
+   "reliable": true
+  },
+  "Mg+0": {
+   "Z": 12,
+   "q": 0,
+   "alpha_bohr3": 75.08540481117218,
+   "richardson_step_bohr3": 0.05513525347430459,
+   "reliable": true
+  },
+  "Mg+1": {
+   "Z": 12,
+   "q": 1,
+   "alpha_bohr3": 35.291922185127845,
+   "richardson_step_bohr3": 0.0036531103765895523,
+   "reliable": true
+  },
+  "Mg+2": {
+   "Z": 12,
+   "q": 2,
+   "alpha_bohr3": 0.49884410465421714,
+   "richardson_step_bohr3": 3.09369706408269e-07,
+   "reliable": true
+  },
+  "Mg+3": {
+   "Z": 12,
+   "q": 3,
+   "alpha_bohr3": 0.3527557474448268,
+   "richardson_step_bohr3": 2.9821377431663947e-05,
+   "reliable": true
+  },
+  "Al-1": {
+   "Z": 13,
+   "q": -1,
+   "alpha_bohr3": 4979.940973103238,
+   "richardson_step_bohr3": 1004.4324351678346,
+   "reliable": false
+  },
+  "Al+0": {
+   "Z": 13,
+   "q": 0,
+   "alpha_bohr3": 81.0236900646065,
+   "richardson_step_bohr3": 19.105283718522646,
+   "reliable": false
+  },
+  "Al+1": {
+   "Z": 13,
+   "q": 1,
+   "alpha_bohr3": 24.856532447577937,
+   "richardson_step_bohr3": 0.0009914150164232656,
+   "reliable": true
+  },
+  "Al+2": {
+   "Z": 13,
+   "q": 2,
+   "alpha_bohr3": 14.203272550442867,
+   "richardson_step_bohr3": 0.0009435677011323899,
+   "reliable": true
+  },
+  "Al+3": {
+   "Z": 13,
+   "q": 3,
+   "alpha_bohr3": 0.26330617101323067,
+   "richardson_step_bohr3": 7.137593394102026e-08,
+   "reliable": true
+  },
+  "Cl-1": {
+   "Z": 17,
+   "q": -1,
+   "alpha_bohr3": 34.632212198237305,
+   "richardson_step_bohr3": 0.04248492021282857,
+   "reliable": true
+  },
+  "Cl+0": {
+   "Z": 17,
+   "q": 0,
+   "alpha_bohr3": 14.926641229686078,
+   "richardson_step_bohr3": 0.0014669029220903222,
+   "reliable": true
+  },
+  "Cl+1": {
+   "Z": 17,
+   "q": 1,
+   "alpha_bohr3": 8.6727741520736,
+   "richardson_step_bohr3": 0.00020174162504105198,
+   "reliable": true
+  },
+  "Cl+2": {
+   "Z": 17,
+   "q": 2,
+   "alpha_bohr3": 5.866453303467776,
+   "richardson_step_bohr3": 4.416569385294148e-05,
+   "reliable": true
+  },
+  "Cl+3": {
+   "Z": 17,
+   "q": 3,
+   "alpha_bohr3": 4.384497814498624,
+   "richardson_step_bohr3": 1.2087056926605536e-05,
+   "reliable": true
+  },
+  "Ag-1": {
+   "Z": 47,
+   "q": -1,
+   "alpha_bohr3": 367.50763411296685,
+   "richardson_step_bohr3": 71.71347213647806,
+   "reliable": false
+  },
+  "Au-1": {
+   "Z": 79,
+   "q": -1,
+   "alpha_bohr3": 123.6955552083856,
+   "richardson_step_bohr3": 2.822621150472486,
+   "reliable": true
+  },
+  "Au+0": {
+   "Z": 79,
+   "q": 0,
+   "alpha_bohr3": 36.49814652046999,
+   "richardson_step_bohr3": 0.008978194202896361,
+   "reliable": true
+  },
+  "Au+1": {
+   "Z": 79,
+   "q": 1,
+   "alpha_bohr3": 13.451486250795034,
+   "richardson_step_bohr3": 0.0010385781364554703,
+   "reliable": true
+  }
+ }
+}

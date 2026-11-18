@@ -6,6 +6,8 @@ staging buffers. If the C++ is edited and drifts from the Python, these tests
 fail rather than silently producing wrong forces in MD.
 """
 
+import os
+
 import numpy as np
 import pytest
 import torch
@@ -17,6 +19,19 @@ from transformers_ace.aot import pad_lammps_inputs
 from transformers_ace.deploy import LAMMPSEnergyModel
 
 R_MAX = 6.0
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Both inputs are gitignored, so a clean clone lacks them and the tests that need them skip.
+RELAXED = (os.path.join(ROOT, "tests", "cspbi3", "results", "relaxed", "cubic_alpha_phase.vasp"),
+           "make it with python tests/cspbi3/evaluate_phases.py --model <checkpoint> --relax")
+CHECKPOINT = (os.path.join(ROOT, "training", "h100_run", "model_h100.pt"),
+              "*.pt is gitignored; train it with training/h100_run/config_h100.yaml")
+
+
+def _require(*inputs):
+    """Skip, naming every missing input and how to make it."""
+    missing = [f"{os.path.relpath(path, ROOT)} ({how})" for path, how in inputs if not os.path.exists(path)]
+    if missing:
+        pytest.skip("not present, not in git: " + "; ".join(missing))
 
 
 def _cpp_padding_reference(z, pos, local_mask, edge_index, max_atoms, max_edges, r_max):
@@ -42,7 +57,8 @@ def _cpp_padding_reference(z, pos, local_mask, edge_index, max_atoms, max_edges,
 
 
 def _system(rep=(2, 2, 1)):
-    at = read("tests/cspbi3/results/relaxed/cubic_alpha_phase.vasp").repeat(rep)
+    _require(RELAXED)
+    at = read(RELAXED[0]).repeat(rep)
     i, j, S = neighbor_list("ijS", at, R_MAX)
     z = torch.tensor(at.numbers)
     pos = torch.tensor(at.positions, dtype=torch.float64)
@@ -86,9 +102,20 @@ def test_padded_edges_lie_beyond_the_cutoff():
 
 
 def test_padding_is_energetically_inert_end_to_end():
-    """Energy, forces and virial must be bitwise identical with and without padding."""
+    """Energy, forces and virial are unchanged by padding, to round-off.
+
+    Padding atoms and edges contribute exactly zero to every sum, so the result
+    is the same NUMBER -- but not necessarily the same bits: a reduction over a
+    longer array may be blocked differently.  torch 2.2 happened to give
+    identical bits; torch 2.11 gives |dE| 1.8e-15 eV, |dF| 8.9e-16 eV/A (~8 ulp
+    of the largest force), |dV| 9e-15.  The bound is 64 ulp of each quantity's
+    scale -- a 1e-14 relative test, which any real contribution from a padding
+    atom (a cutoff weight, an embedding, a spurious edge) would exceed by orders
+    of magnitude.  Padding atoms themselves must carry exactly zero force.
+    """
+    _require(RELAXED, CHECKPOINT)
     z, pos, cell, ei, es, strain, mask = _system()
-    ck = torch.load("training/h100_run/model_h100.pt", map_location="cpu")
+    ck = torch.load(CHECKPOINT[0], map_location="cpu")
     cfg = ck["config"]
     keys = ["r_max", "l_max", "num_radial", "hidden_dim", "num_layers", "correlation_order",
             "correlation_channels", "radial_mlp_hidden", "radial_mlp_layers",
@@ -111,7 +138,10 @@ def test_padding_is_energetically_inert_end_to_end():
     E0, F0, V0 = evaluate((z, pos, cell, ei, es, strain, mask))
     for ma, me in ((n + 2, ei.shape[1]), (n + 64, ei.shape[1] + 2048)):
         E1, F1, V1 = evaluate(pad_lammps_inputs((z, pos, cell, ei, es, strain, mask), ma, me, R_MAX))
-        assert E1 == E0, f"energy changed by {abs(E1 - E0)}"
-        assert torch.equal(F1[:n], F0), "real forces changed"
+        ulp = torch.finfo(torch.float64).eps
+        assert abs(E1 - E0) <= 64 * ulp * max(abs(E0), 1.0), f"energy changed by {abs(E1 - E0)}"
+        f_scale = float(F0.abs().max())
+        assert float((F1[:n] - F0).abs().max()) <= 64 * ulp * f_scale, "real forces changed"
         assert float(F1[n:].abs().max()) == 0.0, "padding atoms carry force"
-        assert torch.equal(V1, V0), "virial changed"
+        v_scale = max(float(V0.abs().max()), 1.0)
+        assert float((V1 - V0).abs().max()) <= 64 * ulp * v_scale, "virial changed"

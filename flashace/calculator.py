@@ -2,7 +2,13 @@ import torch
 import numpy as np
 from ase.calculators.calculator import Calculator, all_changes
 from ase.neighborlist import neighbor_list
-from .checkpoint import load_checkpoint
+from .charge_state import (
+    charge_state_changed,
+    charge_state_from_atoms,
+    charge_state_tensors,
+    electrostatic_environment,
+)
+from .checkpoint import attach_checkpoint_electrostatics, load_checkpoint
 from .model import LegacyTransformersACE, TransformersACE, TransformersACEV3, TransformersACEV4
 
 
@@ -16,7 +22,28 @@ class TransformersACECalculator(Calculator):
     """
     implemented_properties = ['energy', 'forces', 'stress']
 
-    def __init__(self, model_path="model.pt", device=None, **kwargs):
+    def __init__(self, model_path="model.pt", device=None, fragment_policy="auto", **kwargs):
+        """``fragment_policy`` (electrostatic models only):
+
+        ``"auto"`` -- fragments are the connected components of the bond graph
+            at every call (trace_electrostatics' default).  A CHARGED structure
+            whose bond graph splits during MD then has several fragments and no
+            way to share its net charge, and the call raises.
+        ``"initial"`` -- fragments are fixed from the FIRST structure this
+            calculator sees without ``arrays['fragment_id']``, and written into
+            ``atoms.arrays['fragment_id']`` / ``atoms.info['fragment_charges']``
+            so they persist through the trajectory, like a fixed topology.  A
+            charged molecule that dissociates keeps its net charge on the union
+            of its parts, and the energy stays continuous (the dissociating
+            bond's transfer vanishes smoothly with its envelope).  Physics limit,
+            shared by every charge-equilibration model: once the parts are
+            apart their charges freeze at the reference-charge shares, not at
+            integers.  For integer products (redox), give the products their own
+            fragment labels and integer charges -- a diabatic choice.
+        """
+        if fragment_policy not in ("auto", "initial"):
+            raise ValueError(f"fragment_policy must be 'auto' or 'initial', got {fragment_policy!r}")
+        self.fragment_policy = fragment_policy
         Calculator.__init__(self, **kwargs)
         
         # 1. Device Setup
@@ -40,13 +67,16 @@ class TransformersACECalculator(Calculator):
 
         self.atomic_energy_map = {int(k): float(v) for k, v in (conf.get('atomic_energies') or {}).items()}
         self.energy_shift_per_atom = float(conf.get('energy_shift_per_atom', 0.0)) if conf.get('energy_shift_per_atom') is not None else 0.0
-        self.atomic_energy_tensor = None
-        if self.atomic_energy_map:
-            max_z = max(self.atomic_energy_map)
-            tensor = torch.zeros(max_z + 1, dtype=torch.float32, device=self.device)
-            for z, val in self.atomic_energy_map.items():
-                tensor[z] = val
-            self.atomic_energy_tensor = tensor
+
+        # Optional trace_electrostatics, rebuilt from what train.py saved.  It
+        # needs float64 set BEFORE any e3nn module -- the model's included --
+        # is constructed: e3nn bakes the dtype into generated code, and a later
+        # .double() is a silent no-op (trace_electrostatics SPEC 3).  This is a
+        # process-wide setting, exactly as in the training run.
+        electrostatics = conf.get('electrostatics')
+        if electrostatics:
+            torch.set_default_dtype(torch.float64)
+            print("Checkpoint carries trace_electrostatics: default dtype set to float64.")
 
         # Ensure cutoff is float
         self.r_max = float(conf['r_max'])
@@ -99,11 +129,86 @@ class TransformersACECalculator(Calculator):
                 correlation_rank_initial=conf.get('correlation_rank_initial', None),
             )
         self.model = model_class(**model_kwargs)
+        self.electrostatics = None
+        self.spin = False
+        self.spin_key = 'multiplicity'
+        if electrostatics:
+            if electrostatics.get('redox') is not None and fragment_policy == "initial":
+                raise ValueError(
+                    "fragment_policy='initial' assigns fixed fragment charges; a TRACE-Redox "
+                    "checkpoint carries the net charge in its free sector and keeps every bound "
+                    "fragment neutral. Use fragment_policy='auto'."
+                )
+            self.electrostatics = attach_checkpoint_electrostatics(self.model, electrostatics)
+            self.spin = bool(dict(electrostatics.get('heads') or {}).get('spin', False))
+            # The info key the training data used for 2S+1 ('spin' for OMol25).
+            self.spin_key = electrostatics.get('spin_key', 'multiplicity')
         
         # 4. Load Weights
         self.model.load_state_dict(checkpoint['model_state_dict'], strict=True)
         self.model.to(self.device)
         self.model.eval()
+
+        # Inputs are built in the model's own precision: float32 for every
+        # existing checkpoint, float64 for one with electrostatics.
+        self.dtype = next(self.model.parameters()).dtype
+        self.atomic_energy_tensor = None
+        if self.atomic_energy_map:
+            max_z = max(self.atomic_energy_map)
+            tensor = torch.zeros(max_z + 1, dtype=self.dtype, device=self.device)
+            for z, val in self.atomic_energy_map.items():
+                tensor[z] = val
+            self.atomic_energy_tensor = tensor
+
+    def _freeze_fragments(self, atoms):
+        """``fragment_policy="initial"``: label the connected components once."""
+        if 'fragment_id' in atoms.arrays:
+            return
+        cutoff = float(self.electrostatics.heads.r_max)
+        i, j = neighbor_list('ij', atoms, cutoff)
+        parent = list(range(len(atoms)))
+
+        def find(a):
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+
+        for a, b in zip(i.tolist(), j.tolist()):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[max(ra, rb)] = min(ra, rb)
+        roots = [find(a) for a in range(len(atoms))]
+        order = {root: k for k, root in enumerate(sorted(set(roots)))}
+        labels = np.array([order[r] for r in roots], dtype=int)
+        n_fragments = int(labels.max()) + 1 if len(labels) else 0
+        charge = atoms.info.get('charge', atoms.info.get('total_charge', 0.0))
+        if 'fragment_charges' not in atoms.info:
+            if n_fragments > 1 and float(charge) != 0.0:
+                raise ValueError(
+                    f"fragment_policy='initial': the first structure has {n_fragments} "
+                    f"fragments and net charge {charge}; say which fragment carries it "
+                    "with atoms.info['fragment_charges'] (one entry per fragment, "
+                    "labelled by connected component in order of lowest atom index)."
+                )
+            atoms.info['fragment_charges'] = [float(charge)] + [0.0] * (n_fragments - 1)
+        atoms.arrays['fragment_id'] = labels
+
+    def check_state(self, atoms, tol=1e-15):
+        """ASE's change detection, plus the charge state for an electrostatic model.
+
+        The electrostatic energy depends on the net charge, the fragments and
+        the spin state, which live in ``atoms.info``/``atoms.arrays`` and which
+        ASE's own comparison does not look at.
+        """
+        changes = Calculator.check_state(self, atoms, tol=tol)
+        if (
+            self.electrostatics is not None
+            and self.atoms is not None
+            and charge_state_changed(self.atoms, atoms)
+        ):
+            changes = list(changes) + ['charge_state']
+        return changes
 
     def calculate(self, atoms=None, properties=['energy'], system_changes=all_changes):
         # Standard ASE setup
@@ -115,12 +220,12 @@ class TransformersACECalculator(Calculator):
         edge_index = torch.stack(
             [torch.tensor(j, dtype=torch.long), torch.tensor(i, dtype=torch.long)], dim=0
         ).to(self.device)
-        edge_shift = torch.tensor(shifts, dtype=torch.float32, device=self.device)
+        edge_shift = torch.tensor(shifts, dtype=self.dtype, device=self.device)
         
         # 2. Prepare Data
         z = torch.tensor(atoms.numbers, dtype=torch.long, device=self.device)
-        pos = torch.tensor(atoms.positions, dtype=torch.float32, device=self.device)
-        cell = torch.tensor(atoms.cell.array, dtype=torch.float32, device=self.device)
+        pos = torch.tensor(atoms.positions, dtype=self.dtype, device=self.device)
+        cell = torch.tensor(atoms.cell.array, dtype=self.dtype, device=self.device)
         
         # Volume handling (Use 1.0 for non-periodic systems)
         if atoms.pbc.any():
@@ -134,8 +239,25 @@ class TransformersACECalculator(Calculator):
             'cell': cell,
             'edge_index': edge_index,
             'edge_shift': edge_shift,
-            'volume': torch.tensor(vol, dtype=torch.float32, device=self.device),
+            'volume': torch.tensor(vol, dtype=self.dtype, device=self.device),
         }
+        if self.electrostatics is not None and self.fragment_policy == "initial":
+            self._freeze_fragments(atoms)
+        if self.electrostatics is not None:
+            # Periodicity (SPEC 7: an input, never inferred from the cell) and
+            # the charge state -- info['charge'] / info['total_charge'],
+            # arrays['fragment_id'] with info['fragment_charges'], and for
+            # spin-resolved heads info['multiplicity'] /
+            # info['fragment_multiplicities'] -- read exactly as in training.
+            data.update(
+                charge_state_tensors(
+                    charge_state_from_atoms(atoms, spin=self.spin, spin_key=self.spin_key),
+                    self.dtype, self.device,
+                )
+            )
+            # Applied field, metals / electrodes, diabatic charge states
+            # (trace_electrostatics SPEC 15, 20, 21), when the Atoms carry them.
+            data.update(electrostatic_environment(atoms, self.dtype, self.device))
         
         # 3. Run Model
         calc_stress = 'stress' in properties
