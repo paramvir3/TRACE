@@ -1,0 +1,159 @@
+# AuMgO_twosite_bf055_bondlaw_r5_s43: sanitised training config of a released TRACE-Electrostatics run.
+# Step 34b, stage A: step 33's terms plus the frame pair's own interaction (SPEC 39), spin pairing
+# (SPEC 29) and the two-site sector of two s1 frames (SPEC 40 / 40.7), with the band's starting hopping
+# factor 0.55 (SPEC 20, band_initial_factor).  Cold start (references solved on the training set),
+# 40 epochs, lr 1e-3 cosine to 5e-5, energy weight 10.
+# Released checkpoint: AuMgO_twosite_bf055_bondlaw_r5_s43.pt (docs/electrostatics/MODELS.md), the best checkpoint by validation loss,
+# epoch 39 of 40; place it at runs/AuMgO_twosite_bf055_bondlaw_r5_s43/model.pt to score it.
+#
+# Warm-start parent: none (cold start).
+# Published run: the GPU host (one RTX 5060 Ti, 16 GB; torch 2.11.0+cu128), both seeds at once on the one card,
+# PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True, with `device: cuda`.  The `device: cpu` below is the key as it
+# stands in the run's recorded config (the copy kept with its results); set `device: cuda` to train on a GPU.
+# The GPU host's copy was this file with its absolute paths rewritten and `device: cuda` (a recorded sed
+# translation); nothing else differed.
+# Retraining is not bitwise reproducible (GPU reductions, transient NaN recomputations); the reported numbers were
+# measured on the released checkpoint, not on a retraining.
+# Command (from experiments/benchmarks_4g; every path in this file is relative to that directory):
+#     mkdir -p runs/AuMgO_twosite_bf055_bondlaw_r5_s43 && cp configs/AuMgO_twosite_bf055_bondlaw_r5_s43.yaml runs/AuMgO_twosite_bf055_bondlaw_r5_s43/config.yaml
+#     python run_train_nanguard.py runs/AuMgO_twosite_bf055_bondlaw_r5_s43/config.yaml > runs/AuMgO_twosite_bf055_bondlaw_r5_s43/log.txt 2>&1
+#
+# Differences from the published config.yaml: every path made relative to experiments/benchmarks_4g
+# (train / valid files, response-prior files, model_save_path, checkpoint_dir, plot_dir);
+# no key added or removed, no other value changed.
+amp_dtype: bfloat16
+amsgrad: true
+architecture_version: 2
+atomic_energies: null
+attention_distance_penalty: true
+attention_dropout: 0.03
+attention_ffn_hidden: null
+attention_key_dim: null
+attention_layer_scale_init: 0.01
+attention_num_heads: 2
+aux_force_weight: 0.0
+aux_stress_weight: 0.0
+batch_seeded_rng: true
+batch_size: 1
+batched_graphs: true
+checkpoint_dir: runs/AuMgO_twosite_bf055_bondlaw_r5_s43/checkpoints
+checkpoint_interval: 0
+clip_grad_norm: 1.0
+correlation_channels: 16
+correlation_order: 4
+device: cpu
+displacement_prob: 0.0
+displacement_sigma: 0.0
+early_stopping_min_delta: 0.0
+early_stopping_min_epoch: 1
+early_stopping_patience: 0
+electrostatics:
+  config:
+    bond_screening:
+    - 2.0
+    - 2.8
+  dielectric_prior:
+    file: ../benchmarks_phonons/data/MgO_bulk_eps_prior_pbe.xyz
+    weight: 0.05
+  enabled: true
+  heads:
+    bond_hardness_law: two_level
+  partial_charge_weight: 0.0
+  polarizability_prior:
+    file: data/Au_atom_alpha_prior.xyz
+    weight: 0.3
+  redox:
+    anchor: formal
+    band_form: fermi
+    band_initial_factor: 0.55
+    bond_partition: true
+    bond_pauli: true
+    bond_pauli_level: almo
+    bond_pauli_wall: true
+    carrier_band: true
+    carrier_induction: true
+    carrier_overlap: gordon_kim
+    carrier_penetration: true
+    coupling_bound: harrison
+    couplings: true
+    diabatic_selection: amplitude
+    diabatic_space: clusters
+    exclusion: false
+    fragment_ensemble: diabatic
+    frame_induction_damping: true
+    frame_pair: true
+    frame_polarizability_anchor: true
+    frame_polarizability_scope: ions
+    max_charge: 3
+    pauli_table: first_principles
+    shift_gate: true
+    spin_pairing: true
+    state_polarizability: true
+    state_polarizability_elements:
+    - 79
+    - 8
+    state_polarizability_stiffness: onsite
+    two_site: true
+energy_shift_per_atom: null
+energy_weight: 10.0
+epochs: 40
+force_consistency_weight: 0.0
+forces_weight: 1.0
+forces_weight_decay_epochs: 0
+forces_weight_final: 1.0
+gaussian_width: 0.5
+grad_accum_steps: 8
+hidden_dim: 64
+l_max: 2
+learning_rate: 0.001
+lr_min: 5.0e-05
+lr_restart_mult: 1.0
+lr_scheduler_interval: epoch
+lr_scheduler_t_max: 40
+lr_scheduler_use_restarts: false
+lr_warmup_epochs: 0
+lr_warmup_start_factor: 0.1
+model_save_path: runs/AuMgO_twosite_bf055_bondlaw_r5_s43/model.pt
+muon_aux_betas:
+- 0.9
+- 0.95
+muon_aux_eps: 1.0e-10
+muon_exclude: []
+muon_include: []
+muon_momentum: 0.95
+muon_nesterov: true
+muon_ns_dtype: auto
+muon_ns_steps: 5
+muon_parameter_mode: hidden
+num_layers: 1
+num_radial: 12
+num_workers: 0
+optimizer: muon
+plot_dir: runs/AuMgO_twosite_bf055_bondlaw_r5_s43/plots
+plot_training_curves: true
+precompute_neighbors: true
+r_max: 5.29
+radial_basis_type: bessel
+radial_mlp_hidden: 32
+radial_mlp_layers: 2
+radial_trainable: false
+random_rotation: false
+redox_kT_epochs: null
+redox_kT_start: null
+save_last_checkpoint: true
+seed: 43
+sobolev_sigma: 0.02
+sobolev_weight: 0.0
+solve_atomic_energies: true
+stress_weight: 0.0
+stress_weight_final: 0.0
+stress_weight_ramp_epochs: 0
+temperature_scale_end: 1.0
+temperature_scale_epochs: 0
+temperature_scale_start: 1.0
+torch_num_interop_threads: 1
+torch_num_threads: 4
+train_file: ../benchmarks_phonons/data/AuMgO_bulkaugw_train.xyz
+use_amp: false
+valid_file: ../benchmarks_phonons/data/AuMgO_bulkaugw_valid.xyz
+weight_decay: 1.0e-05

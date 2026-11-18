@@ -1,0 +1,5 @@
+# The data files are not distributed: data/README.md gives the sources, the scripts that rebuild them and their sha256.
+data/*
+!data/README.md
+# Raw downloads ($TRACE_PHONON_RAW defaults here).
+raw/
