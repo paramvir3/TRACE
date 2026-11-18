@@ -10,7 +10,8 @@
 > [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md) for the status,
 > installation, quick start and benchmarks, and
 > [docs/electrostatics/REPRODUCE.md](docs/electrostatics/REPRODUCE.md) to
-> reproduce the numbers. The rest of this README describes TRACE itself and is
+> reproduce the numbers. Trained checkpoints:
+> [TRACE-Electrostatics v0.1 release](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1). The rest of this README describes TRACE itself and is
 > unchanged.
 <!-- END TRACE-Electrostatics release block -->
 

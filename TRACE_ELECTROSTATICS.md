@@ -9,7 +9,8 @@ and adds it to the TRACE energy. Forces, stress, polarisabilities and Born
 charges are then exact derivatives of one energy.
 
 This is a **research release**. Read the status paragraph below before you use
-a checkpoint for science.
+a checkpoint for science. The trained checkpoints are on the
+[TRACE-Electrostatics v0.1 release page](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1).
 
 Contents: [Status](#status) · [What is in this release](#what-is-in-this-release) ·
 [The equations](#the-equations) · [Installation](#installation) ·
@@ -220,7 +221,8 @@ import; they are harmless.
 ### 1. An ASE calculator on a released checkpoint
 
 Download `AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt` (step 34b, stage B,
-seed 43) and `SHA256SUMS` from the release, then check the file
+seed 43) and `SHA256SUMS` from the
+[v0.1 release](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1), then check the file
 ([`docs/electrostatics/MODELS.md`](docs/electrostatics/MODELS.md)). Its sha256
 is `740ea30cca04950d153ebddc4301b9926ea2e97e89a8d6b09fa8f4e24a79c297`.
 

@@ -1,7 +1,7 @@
 # Released checkpoints
 
 The trained models behind the reported TRACE-Electrostatics numbers are attached to the GitHub release of this
-branch as release assets, not stored in git. Each asset is the run's `model.pt` (the best checkpoint by validation
+branch, [TRACE-Electrostatics v0.1](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1), as release assets, not stored in git. Each asset is the run's `model.pt` (the best checkpoint by validation
 loss), unmodified, renamed `<run_name>.pt`. The release also carries `SHA256SUMS`, which lists every asset. The
 cluster runs of the PFN-size protocol live in `runs/protocol/<name>/` and are named `protocol_<name>.pt`, so they
 cannot be confused with the first-round runs of the same name (which are not released).
@@ -74,11 +74,11 @@ from epoch 272); the asset is the final best checkpoint of the resumed run.
 
 ## Download and verify
 
-From the release page (Assets), or with the GitHub CLI:
+From the [release page](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1) (Assets), or with the GitHub CLI:
 
 ```bash
 mkdir -p trace-models && cd trace-models
-gh release download <release-tag> --repo <owner>/<repo> --pattern 'AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt' --pattern SHA256SUMS
+gh release download trace-electrostatics-v0.1 --repo paramvir3/TRACE --pattern 'AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt' --pattern SHA256SUMS
 shasum -a 256 -c SHA256SUMS --ignore-missing      # Linux: sha256sum -c SHA256SUMS --ignore-missing
 ```
 
