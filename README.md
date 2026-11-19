@@ -367,6 +367,12 @@ own 4×4×4 supercell (512 atoms). There are seven pre-registered criteria (P0�
 | **TRACE-Electrostatics** | 1.950 / 1.961 | 3.334 / 3.300 | 382.1 / 669.3; 370.3 / 667.4 | 8.5 / 8.8 | 7 / 7 both |
 | earlier variant ᵃ | 2.402 / 2.534 | 3.025 / 3.002 | 384.3 / 807.9; 398.7 / 851.5 | 28.9 / 53.9 | 3 / 7, 2 / 7 |
 
+![MgO phonons of TRACE-Electrostatics against DFT (PBE), without and with NAC](docs/electrostatics/figures/mgo_phonons_vs_pbe.png)
+
+TRACE-Electrostatics (red, dashed) against DFT (PBE, black). Without NAC (left), the top branch near Γ follows the
+supercell's own interpolation, so it matches PBE only on the same 512-atom supercell. With NAC (right), the LO–TO
+splitting comes from the model's own Born charges and ε∞. Made by `experiments/benchmarks_phonons/plot_release_phonons.py`.
+
 ### Verdict and limitations
 
 - **Cluster sets:** the lowest force error of all compared models on all three sets, and the DFT charge-transfer shift
