@@ -289,44 +289,6 @@ variable, and the 640-atom CsPbI3 starting structure. The exact macOS
 LAMMPS+PLUMED CMake build recipe is documented in
 [docs/LAMMPS.md](docs/LAMMPS.md).
 
-## Compatibility
-
-These imports are equivalent:
-
-```python
-from transformers_ace import TransformersACE, TransformersACECalculator
-from flashace import FlashACE, FlashACECalculator
-```
-
-## Acknowledgements
-
-Transformers-ACE was developed with assistance from OpenAI Codex.
-
-## License
-
-See [LICENSE](LICENSE).
-
-## Citation
-
-[![arXiv](https://img.shields.io/badge/arXiv-2607.25652-b31b1b.svg)](https://arxiv.org/abs/2607.25652)
-
-```bibtex
-@misc{ahlawat2026trace,
-  title         = {Transformer Atomic Cluster Expansion: TRACE},
-  author        = {Ahlawat, Paramvir},
-  year          = {2026},
-  eprint        = {2607.25652},
-  archivePrefix = {arXiv},
-  primaryClass  = {cond-mat.mtrl-sci},
-  doi           = {10.48550/arXiv.2607.25652},
-  url           = {https://arxiv.org/abs/2607.25652}
-}
-@book{Varshalovich,
-  author  = {Varshalovich, D. A. and Moskalev, A. N. and Khersonskii, V. K.},
-  title   = {Quantum Theory of Angular Momentum: Irreducible Tensors, Spherical Harmonics, Vector Coupling Coefficients, 3nj Symbols}
-}
-```
-
 <!-- BEGIN TRACE-Electrostatics release block -->
 ## TRACE-Electrostatics
 
@@ -429,3 +391,41 @@ python -m pytest tests -q -p no:cacheprovider --ignore=tests/run_lammps
 - Checkpoints: [MODELS.md](docs/electrostatics/MODELS.md).
 - User guide: [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md).
 <!-- END TRACE-Electrostatics release block -->
+
+## Compatibility
+
+These imports are equivalent:
+
+```python
+from transformers_ace import TransformersACE, TransformersACECalculator
+from flashace import FlashACE, FlashACECalculator
+```
+
+## Acknowledgements
+
+Transformers-ACE was developed with assistance from OpenAI Codex.
+
+## License
+
+See [LICENSE](LICENSE).
+
+## Citation
+
+[![arXiv](https://img.shields.io/badge/arXiv-2607.25652-b31b1b.svg)](https://arxiv.org/abs/2607.25652)
+
+```bibtex
+@misc{ahlawat2026trace,
+  title         = {Transformer Atomic Cluster Expansion: TRACE},
+  author        = {Ahlawat, Paramvir},
+  year          = {2026},
+  eprint        = {2607.25652},
+  archivePrefix = {arXiv},
+  primaryClass  = {cond-mat.mtrl-sci},
+  doi           = {10.48550/arXiv.2607.25652},
+  url           = {https://arxiv.org/abs/2607.25652}
+}
+@book{Varshalovich,
+  author  = {Varshalovich, D. A. and Moskalev, A. N. and Khersonskii, V. K.},
+  title   = {Quantum Theory of Angular Momentum: Irreducible Tensors, Spherical Harmonics, Vector Coupling Coefficients, 3nj Symbols}
+}
+```
