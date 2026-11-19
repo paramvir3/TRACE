@@ -388,17 +388,83 @@ splitting comes from the model's own Born charges and ε∞. Made by `experiment
 
 Every result, failures included: [BENCHMARKS.md](docs/electrostatics/BENCHMARKS.md).
 
-### Reproduce
+### Install
+
+TRACE-Electrostatics is part of the TRACE package. The [Install](#install) steps above also install
+`trace_electrostatics` and `trace_redox`, and they need nothing beyond TRACE's own dependencies (torch, numpy, scipy).
+Whether a model uses electrostatics is set by its training config, not at install time:
+
+| | TRACE alone | TRACE-Electrostatics |
+|---|---|---|
+| training YAML | no `electrostatics:` block | an `electrostatics:` block with `enabled: true` |
+| precision | float32 | float64 (set automatically) |
+| inference | ASE, LAMMPS (TorchScript / AOT) | ASE only |
+
+Without the block, training and inference are unchanged, so existing TRACE configs and checkpoints behave as before.
+
+For the phonon benchmark, also install phonopy (the released numbers used phonopy 2.17.2):
 
 ```bash
-git clone -b trace-electrostatics https://github.com/paramvir3/TRACE.git && cd TRACE
-python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pip install --no-deps -e .
-python -m pytest tests -q -p no:cacheprovider --ignore=tests/run_lammps
+python -m pip install phonopy
 ```
 
-- Data download and checksums, configs, training and scoring: [REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
-- Checkpoints: [MODELS.md](docs/electrostatics/MODELS.md).
-- User guide: [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md).
+To check the installation, run the electrostatics tests:
+
+```bash
+python -m pytest tests/electrostatics tests/redox -q -p no:cacheprovider
+```
+
+### Train
+
+Add an `electrostatics:` block to an ordinary TRACE training config, then run `python train.py --config config.yaml`.
+The data are extended-XYZ files with energies and forces, as for TRACE. A structure's net charge goes in
+`atoms.info['charge']` (0 if absent).
+
+**Bound sector only.** Split-charge equilibration and induced dipoles, with no integer charge states:
+
+```yaml
+electrostatics:
+  enabled: true
+  config:
+    bond_screening: [2.0, 2.8]      # Pauli screening of the bond hardness (SPEC 26)
+  heads:
+    bond_hardness_law: two_level
+```
+
+**With charge states and redox (the released model).** Add a `redox:` block under `electrostatics:`. Start from the
+released model's config, which sets every option:
+[`AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.yaml`](experiments/benchmarks_4g/configs/AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.yaml).
+`RedoxConfig()` defaults alone build the older mean-field model, and `band_initial_factor: 0.55` must be set.
+
+The released model was trained in two stages:
+1. **Stage A:** cold start; energy weight 10; 40 epochs; learning rate 10⁻³ cosine to 5·10⁻⁵.
+2. **Stage B:** warm start from stage A's best checkpoint (`make_warm_start.py`); energy weight 1000; 20 epochs;
+   learning rate 10⁻⁴ cosine to 5·10⁻⁶.
+
+The data were the 300 Au₂/MgO slabs of the 4G set plus 136 bulk MgO cells from Togo's PBE set, with response priors on
+bulk ε∞ and the Au-atom polarisability. Each epoch took about 20 min per seed on one RTX 5060 Ti (16 GB). Every step,
+with exact commands, is in [REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
+
+### Use
+
+```python
+from ase.build import bulk
+from transformers_ace import TransformersACECalculator
+
+calc = TransformersACECalculator(model_path="AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt", device="cpu")
+atoms = bulk("MgO", "rocksalt", a=4.2557, cubic=True).repeat(2)
+atoms.info["charge"] = 0.0           # net charge (e)
+atoms.calc = calc
+print(atoms.get_potential_energy(), atoms.get_forces().shape)
+```
+
+- **Checkpoints:** download them from the
+  [v0.1 release](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1); their list and sha256
+  are in [MODELS.md](docs/electrostatics/MODELS.md).
+- **Inputs the calculator also takes:** charge states, spins and external fields
+  ([user guide, §7.1](docs/electrostatics.md)).
+- **Reproducing the benchmarks:** [REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
+- **Full guide:** [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md).
 <!-- END TRACE-Electrostatics release block -->
 
 ## Compatibility
