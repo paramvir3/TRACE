@@ -321,10 +321,6 @@ H_nm = ± σ_nm f_nm τ_uv,      E_total = E_short + F,      F = −kT ln Tr exp
 - O_uv: Gordon–Kim overlap and penetration, tabulated from first-principles charge-state densities.
 - τ_uv: the one-electron hops.
 
-Every ingredient is published (split-charge equilibration, polarisable ions, Gordon–Kim, Harrison scaling). What
-TRACE adds is their combination inside one attention potential. Full methods:
-[METHODS.md](docs/electrostatics/METHODS.md).
-
 ### Benchmarks
 
 The test sets are the 4G-HDNNP charge-transfer sets (Ko et al., *Nat. Commun.* **12**, 398 (2021); Materials Cloud
