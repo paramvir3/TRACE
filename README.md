@@ -1,123 +1,5 @@
 # Transformers-ACE 
 
-<!-- BEGIN TRACE-Electrostatics release block -->
-## TRACE-Electrostatics (this branch)
-
-TRACE-Electrostatics adds long-range electrostatics, polarisation, charge transfer and integer charge states (redox)
-to the TRACE attention potential. It does this through one master equation whose parameters come from TRACE's
-equivariant attention layers.
-- **Packages:** [`trace_electrostatics/`](trace_electrostatics/) holds the bound sector: SQE bond variables, induced
-  dipoles, quadrupoles, dispersion, Ewald/PME, metals and EVB charge states.
-  [`trace_redox/`](trace_redox/) holds the free-charge sector: charge-state ensembles with explicit charge transfer.
-- **Exact minimisation:** the electrostatic energy is minimised exactly. Forces, stress, polarisabilities and Born
-  charges are exact derivatives of a single energy.
-- **Precision:** everything runs in float64.
-
-**This is a research release.** Every number below was measured on the released checkpoints, failures included.
-- **Main documentation:** [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md), with installation, quick start and
-  limitations.
-- **Methods:** [docs/electrostatics/METHODS.md](docs/electrostatics/METHODS.md), the full equations.
-- **Benchmarks:** [docs/electrostatics/BENCHMARKS.md](docs/electrostatics/BENCHMARKS.md), every result, with sources.
-- **Reproduction:** [docs/electrostatics/REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
-- **Checkpoints:** the [TRACE-Electrostatics v0.1 release](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1)
-  ([list and sha256](docs/electrostatics/MODELS.md)).
-
-### Benchmarks
-
-All four sets come from the 4G-HDNNP charge-transfer benchmarks of Ko, Finkler, Goedecker & Behler,
-*Nat. Commun.* **12**, 398 (2021). The data are Materials Cloud record 2020.137, CC BY 4.0. The comparisons are with
-4G-HDNNP and with PFN's NequIP variants (pfnet-research/charge_transfer_nnp).
-- **PFN's numbers** are validation RMSEs digitised from a figure on PFN's blog.
-- **Ours** are measured on held-out test sets.
-- **4G-HDNNP's pooled values** are the reference lines of that same figure.
-
-**1. Cluster sets at PFN's training sizes.** Pooled test force RMSE in eV/Å; each system is its own single-seed model.
-
-| system (train / valid / test) | TRACE local | **TRACE + electrostatics** | best published (PFN, digitised) | 4G-HDNNP |
-|---|---|---|---|---|
-| Ag₃± (8000 / 1000 / 2013) | 1.892 | **0.0159** | NequIP+QEq 0.0204 | 0.031 |
-| NaCl (4000 / 500 / 500) | 0.0553 | **0.0068** | NequIP 0.0104 | 0.0329 |
-| C₁₀H₂ / C₁₀H₃⁺ (8000 / 1000 / 1019) | 0.0805 | **0.0356** | NequIP 0.0495 | 0.0757 |
-
-NaCl charge-transfer shift between the Na₈Cl₈⁺ and Na₉Cl₈⁺ scan minima:
-
-| | DFT | 4G-HDNNP | TRACE + electrostatics | TRACE local |
-|---|---|---|---|---|
-| shift (Å) | 0.107 | 0.109 | 0.104 | 0 |
-
-**2. Au₂ on MgO(001), with and without Al doping (Table II of the 4G paper).**
-- **The test:** the dopant moves an electron onto the Au₂ and flips the preferred adsorption geometry, so a purely
-  local model must fail.
-- **Columns:** the two featured TRACE-Redox models, two training seeds each.
-- **Step 34b** has the current equations. **Step 31** is closest to DFT on Table II.
-
-| quantity | DFT | 4G-HDNNP | step 34b s42 | step 34b s43 | step 31 s42 | step 31 s43 |
-|---|---|---|---|---|---|---|
-| wet_u, undoped E(wetting) − E(non-wetting) (meV) | +928.9 | +975.4 | +610.4 | +729.7 | +851.0 | **+920.4** |
-| wet_d, doped (meV) | −2.7 | −41.0 | +92.3 | **−27.7** | −177.4 | −75.7 |
-| T5 = wet_d − wet_u (% of DFT) | 100 % | 109.1 % | 55.6 % | 81.3 % | 110.4 % | **106.9 %** |
-| test force RMSE, undoped / doped (eV/Å) | | | 0.0845 / 0.1242 | 0.0616 / 0.1112 | 0.0614 / 0.0867 | 0.0776 / 0.1045 |
-| test energy RMSE, undoped / doped (meV/atom) | | | 1.353 / 0.989 | 1.142 / 0.671 | 0.590 / 0.937 | 0.469 / 0.621 |
-| Au–Au bond force at 2.089 Å, test 167 (eV/Å) | +15.25 | | +14.25 | +15.82 | not measured | +6.18 |
-| pre-registered verdict | | | FAIL | FAIL | FAIL | pass |
-
-**3. Bulk MgO phonons against PBE** (Togo's phono3py set, NIMS MDR, CC BY 4.0), the same Au₂/MgO models.
-- **Born charges:** the models' own Born charges and ε∞, through the non-analytic (NAC) correction.
-- **Supercell:** force constants on 4×4×4 (512 atoms), PBE's own supercell.
-- **Criteria:** seven pre-registered criteria, P0–P6.
-
-| model | Z*(Mg) | ε∞ | TO / LO at Γ (cm⁻¹) | path RMS without / with NAC (cm⁻¹) | criteria passed |
-|---|---|---|---|---|---|
-| PBE | 1.992 | 3.235 | 373.3 / 681.3 | | |
-| **step 34b s42** | 1.950 | 3.334 | 382.1 / 669.3 | 8.1 / 8.5 | **7 / 7** |
-| **step 34b s43** | 1.961 | 3.300 | 370.3 / 667.4 | 8.6 / 8.8 | **7 / 7** |
-| step 31 s42 | 2.402 | 3.025 | 384.3 / 807.9 | 22.0 / 28.9 | 3 / 7 |
-| step 31 s43 | 2.534 | 3.002 | 398.7 / 851.5 | 47.8 / 53.9 | 2 / 7 |
-
-**4. Step 9's TRACE-Redox stack on the cluster sets** (pre-registered, PFN sizes, single seed). Pooled force RMSE in eV/Å.
-
-| criterion | target | measured | verdict |
-|---|---|---|---|
-| NaCl pooled force RMSE | below NequIP's 0.0104 | 0.0064 | pass |
-| NaCl charge-transfer shift | 0.107 ± 0.010 Å | 0.102 Å | pass |
-| Ag₃ pooled force RMSE | below NequIP+QEq's 0.0204 | 0.0160 | pass |
-| carbon-chain pooled force RMSE | below NequIP's 0.0495 | 0.0329 (with covalent units) | pass |
-| no charge state worse than round 5 by more than 10 % | | Na₈Cl₈⁺ F +19 %, Ag₃⁺ F +23 % | **fail** |
-
-### Honest status
-
-- **Cluster sets:** TRACE + electrostatics has the lowest pooled force error on all three sets, against both 4G-HDNNP
-  and PFN's NequIP variants, at PFN's training sizes. It reproduces the NaCl charge-transfer shift (0.104 Å against
-  DFT's 0.107). These are separate per-system models on an older equation stack, one seed each.
-- **Au₂/MgO:** no single model passes every pre-registered criterion on both seeds.
-  - Step 34b gets the MgO phonons (7/7 on both seeds), the Au–Au wall and the gas-phase Au₂ right. But its undoped
-    wetting split is 199–319 meV low, so its T5 is 56–81 % of DFT.
-  - Step 31 seed 43 is closer to DFT than 4G-HDNNP on wet_u and T5. Its phonons, its Au–Au wall and its seed 42 fail.
-- **Against 4G-HDNNP on Au₂/MgO:** with 300 training structures against 4G's about 4,500, our pooled test force error
-  (0.075–0.106 eV/Å) has not reached 4G's 0.067.
-- **What else failed or was never measured:** see [BENCHMARKS.md, section 5](docs/electrostatics/BENCHMARKS.md).
-
-### Quick start
-
-```bash
-git clone -b trace-electrostatics https://github.com/paramvir3/TRACE.git && cd TRACE
-python -m pip install -r requirements.txt -r requirements-dev.txt
-python -m pip install --no-deps -e .
-python -m pip install phonopy        # only for the phonon benchmark (released numbers: phonopy 2.17.2)
-python -m pytest tests -q -p no:cacheprovider --ignore=tests/run_lammps   # 2172 passed, 16 skipped, 2 xfailed in our clean-checkout run
-```
-
-[TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md#quick-start) has four worked examples:
-- an ASE calculator on a released checkpoint;
-- training from a config;
-- scoring Table II;
-- scoring MgO phonons with `score_phonons.py --p5-supercell 4`.
-
-Molecular dynamics runs through ASE only: LAMMPS export refuses models with electrostatics.
-
-The rest of this README describes TRACE itself and is unchanged.
-<!-- END TRACE-Electrostatics release block -->
-
 Transformers-ACE is a research implementation of local equivariant transformer
 potentials built on Atomic Cluster Expansion (ACE) descriptors. It predicts a
 single invariant total energy; forces and stresses are obtained by exact energy
@@ -444,3 +326,106 @@ See [LICENSE](LICENSE).
   title   = {Quantum Theory of Angular Momentum: Irreducible Tensors, Spherical Harmonics, Vector Coupling Coefficients, 3nj Symbols}
 }
 ```
+
+<!-- BEGIN TRACE-Electrostatics release block -->
+## TRACE-Electrostatics
+
+Long-range electrostatics, polarisation, charge transfer and integer charge states (redox) for TRACE. TRACE's
+attention layers supply every per-atom and per-bond parameter. The electrostatic energy is minimised exactly, in
+float64. Forces, stress, Born charges and polarisabilities are therefore exact derivatives of one energy.
+Research release: [checkpoints (v0.1)](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1).
+
+### Model
+
+**Bound sector** (`trace_electrostatics`):
+
+```
+E_elec = min_m ½ mᵀ K m + cᵀ m,   m = (t, μ̂, Θ̂),   q = B diag(f) t + ρ
+```
+
+- t are split charges on bonds, B is the bond incidence matrix and f the dissociation envelope.
+- μ̂ and Θ̂ are the induced dipoles and quadrupoles.
+- K is the Gaussian-multipole Coulomb (Gram) matrix plus the hardness terms. It is positive definite under the
+  Gaussian kernel.
+
+**Free-charge sector** (`trace_redox`, SPEC §0). n is a configuration of integer unit charges:
+
+```
+E(n) = Σ_u ε_u(n_u) + ½ q(n)ᵀ J q(n) − ½ s(n)ᵀ K(n)⁻¹ s(n) + Σ_{u<v} O_uv(n_u, n_v)
+H_nm = ± σ_nm f_nm τ_uv,      E_total = E_short + F,      F = −kT ln Tr exp(−H/kT)
+```
+
+- ε_u: the isolated-ion energies.
+- O_uv: Gordon–Kim overlap and penetration, tabulated from first-principles charge-state densities.
+- τ_uv: the one-electron hops.
+
+Every ingredient is published (split-charge equilibration, polarisable ions, Gordon–Kim, Harrison scaling). What
+TRACE adds is their combination inside one attention potential. Full methods:
+[METHODS.md](docs/electrostatics/METHODS.md).
+
+### Benchmarks
+
+The test sets are the 4G-HDNNP charge-transfer sets (Ko et al., *Nat. Commun.* **12**, 398 (2021); Materials Cloud
+2020.137, CC BY 4.0) and MgO phonons against PBE (Togo, NIMS MDR, CC BY 4.0).
+- **Errors** are RMSE on held-out test sets.
+- **PFN NequIP values** were digitised from PFN's blog figure.
+- **Seeds:** the Au₂/MgO models were trained with two seeds each.
+
+**Cluster sets, PFN training sizes.** Pooled force RMSE (eV/Å) and the NaCl charge-transfer shift (Å). One model
+per system, one seed.
+
+| | Ag₃± | NaCl | C₁₀H₂/C₁₀H₃⁺ | NaCl shift |
+|---|---|---|---|---|
+| DFT | | | | 0.107 |
+| 4G-HDNNP | 0.031 | 0.0329 | 0.0757 | 0.109 |
+| best PFN NequIP variant | 0.0204 | 0.0104 | 0.0495 | |
+| TRACE (local) | 1.892 | 0.0553 | 0.0805 | 0 |
+| **TRACE-Electrostatics** | **0.0159** | **0.0068** | **0.0356** | **0.104** |
+
+**Au₂ on MgO(001), Al-doped and undoped** (Table II of Ko et al.). The dopant moves an electron onto Au₂ and flips the
+preferred adsorption geometry. wet = E(wetting) − E(non-wetting), in meV. T5 = wet_d − wet_u. Each TRACE cell gives
+seed 42 / seed 43.
+
+| | wet_u | wet_d | T5 (% DFT) | test F RMSE undoped / doped (eV/Å) | Au–Au force at 2.089 Å (eV/Å) |
+|---|---|---|---|---|---|
+| DFT (PBE) | +928.9 | −2.7 | 100 | | +15.25 |
+| 4G-HDNNP | +975.4 | −41.0 | 109.1 | | |
+| step 34b (current equations) | +610.4 / +729.7 | +92.3 / −27.7 | 55.6 / 81.3 | 0.0845 / 0.1242; 0.0616 / 0.1112 | +14.25 / +15.82 |
+| step 31 | +851.0 / +920.4 | −177.4 / −75.7 | 110.4 / 106.9 | 0.0614 / 0.0867; 0.0776 / 0.1045 | — / +6.18 |
+
+**Bulk MgO phonons against PBE.** The NAC correction uses each model's own Z* and ε∞. Force constants are on PBE's
+own 4×4×4 supercell (512 atoms). There are seven pre-registered criteria (P0–P6).
+
+| | Z*(Mg) | ε∞ | TO / LO at Γ (cm⁻¹) | path RMS, NAC (cm⁻¹) | criteria |
+|---|---|---|---|---|---|
+| PBE | 1.992 | 3.235 | 373.3 / 681.3 | | |
+| step 34b s42 / s43 | 1.950 / 1.961 | 3.334 / 3.300 | 382.1 / 669.3; 370.3 / 667.4 | 8.5 / 8.8 | 7 / 7 both |
+| step 31 s42 / s43 | 2.402 / 2.534 | 3.025 / 3.002 | 384.3 / 807.9; 398.7 / 851.5 | 28.9 / 53.9 | 3 / 7, 2 / 7 |
+
+### Verdict and limitations
+
+- **Cluster sets:** the lowest force error of all compared models on all three sets, and the DFT charge-transfer shift
+  in NaCl. Caveats: one seed, separate models, an older equation stack.
+- **Au₂/MgO:** no model passes every pre-registered criterion on both seeds.
+  - Step 34b is right on the phonons, the Au–Au repulsion and gas-phase Au₂. But wet_u is 199–319 meV low.
+  - Step 31 is right on Table II. Its phonons and its Au–Au wall fail.
+  - Its pooled test force error, 0.075–0.106 eV/Å from 300 training structures, has not reached 4G-HDNNP's 0.067 from
+    about 4,500.
+- **Charge on Au₂:** the doped Au₂ carries a full electron (−1.00 e against Hirshfeld's −0.27; Hirshfeld is
+  partition-dependent).
+- **Not implemented:** ASE only (no LAMMPS export with electrostatics); trained at Γ.
+
+Every result, failures included: [BENCHMARKS.md](docs/electrostatics/BENCHMARKS.md).
+
+### Reproduce
+
+```bash
+git clone -b trace-electrostatics https://github.com/paramvir3/TRACE.git && cd TRACE
+python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pip install --no-deps -e .
+python -m pytest tests -q -p no:cacheprovider --ignore=tests/run_lammps
+```
+
+- Data download and checksums, configs, training and scoring: [REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
+- Checkpoints: [MODELS.md](docs/electrostatics/MODELS.md).
+- User guide: [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md).
+<!-- END TRACE-Electrostatics release block -->
