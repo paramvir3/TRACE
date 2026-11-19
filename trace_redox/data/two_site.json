@@ -1,0 +1,562 @@
+{
+ "method": "PBE / def2-TZVP (def2 ECP for Ag, Au), counterpoise-corrected ground-state interaction energy; TDA sigma sigma* triplet and singlet roots picked by their weight on the atoms' valence s combinations; tools/electrostatics/pair_no_hop_curve.py, collected by collect_two_site.py 2026-11-14 (singlet-weight rule applied)",
+ "units": "eV, A",
+ "pairs": {
+  "1-1": {
+   "symbols": [
+    "H",
+    "H"
+   ],
+   "R": [
+    0.6,
+    0.74,
+    0.9,
+    1.1,
+    1.4
+   ],
+   "E_gs": [
+    -3.9703,
+    -4.5323,
+    -4.2507,
+    -3.4232,
+    -2.0434
+   ],
+   "E_T": [
+    11.966,
+    10.213,
+    8.268,
+    6.076,
+    3.494
+   ],
+   "weight_T": [
+    0.69,
+    0.79,
+    0.88,
+    0.94,
+    0.98
+   ],
+   "E_S": [
+    null,
+    12.897,
+    11.865,
+    10.786,
+    9.585
+   ],
+   "weight_S": [
+    0.47,
+    0.52,
+    0.58,
+    0.65,
+    0.74
+   ],
+   "E_cov": [
+    7.9957,
+    5.6807,
+    4.0173,
+    2.6528,
+    1.4506
+   ],
+   "U": [
+    null,
+    2.684,
+    3.597,
+    4.71,
+    6.091
+   ],
+   "t": [
+    null,
+    5.738403,
+    4.952268,
+    4.047707,
+    2.893527
+   ],
+   "flagged": [
+    {
+     "R": 0.6,
+     "E_S": 13.94,
+     "weight_S": 0.47,
+     "U": 1.974,
+     "t": 6.457671,
+     "why": "singlet weight below 0.5"
+    }
+   ],
+   "applied": false,
+   "why_not_applied": "every H-H pair inside a molecule lies beyond the last point (1.4 A) and each H is bonded to a third atom; the bare pair's hop is not that pair's, and no first-principles point of such a pair exists"
+  },
+  "47-47": {
+   "symbols": [
+    "Ag",
+    "Ag"
+   ],
+   "R": [
+    2.2,
+    2.3,
+    2.4,
+    2.53,
+    2.65,
+    2.8,
+    3.0
+   ],
+   "E_gs": [
+    -0.8909,
+    -1.3562,
+    -1.6086,
+    -1.7343,
+    -1.7266,
+    -1.6252,
+    -1.4168
+   ],
+   "E_T": [
+    2.265,
+    2.117,
+    1.977,
+    1.806,
+    1.657,
+    1.478,
+    1.253
+   ],
+   "weight_T": [
+    0.91,
+    0.91,
+    0.91,
+    0.91,
+    0.92,
+    0.93,
+    0.94
+   ],
+   "E_S": [
+    3.609,
+    3.526,
+    3.456,
+    3.385,
+    3.338,
+    3.3,
+    3.278
+   ],
+   "weight_S": [
+    0.72,
+    0.71,
+    0.69,
+    0.67,
+    0.65,
+    0.63,
+    0.59
+   ],
+   "E_cov": [
+    1.3741,
+    0.7608,
+    0.3684,
+    0.0717,
+    -0.0696,
+    -0.1472,
+    -0.1638
+   ],
+   "U": [
+    1.344,
+    1.409,
+    1.479,
+    1.579,
+    1.681,
+    1.822,
+    2.025
+   ],
+   "t": [
+    1.429544,
+    1.366066,
+    1.306954,
+    1.236255,
+    1.175911,
+    1.104242,
+    1.013328
+   ],
+   "flagged": [],
+   "applied": false,
+   "why_not_applied": "the entries of SPEC 40.7 cannot be built for silver yet: data/ion_polarizabilities.json holds Ag- only, so the neutral frame's polarizability is the learned head's and the package's fixed terms for a silver pair depend on the weights (0.057 eV between two seeded modules, 2026-11-14); with the neutral entry alone the pair is in the state the review of 2026-11-14 rejected (one of four levels corrected)",
+   "carriers": {
+    "R": [
+     2.2,
+     2.3,
+     2.4,
+     2.53,
+     2.65,
+     2.8,
+     3.0
+    ],
+    "EA": [
+     0.756,
+     0.83,
+     0.902,
+     0.993,
+     1.075,
+     1.175,
+     1.305
+    ],
+    "IP": [
+     7.935,
+     7.839,
+     7.748,
+     7.637,
+     7.54,
+     7.424,
+     7.279
+    ],
+    "method": "PBE; cation def2-TZVP, anion def2-TZVPD (def2 ECP for Ag, Au); both resonance states by symmetry-constrained UKS; vertical EA and IP of the pair on the exact atomic values; tools/electrostatics/pair_one_carrier_curve.py"
+   }
+  },
+  "79-79": {
+   "symbols": [
+    "Au",
+    "Au"
+   ],
+   "R": [
+    2.0,
+    2.1,
+    2.2,
+    2.3,
+    2.47,
+    2.6,
+    2.8,
+    3.0
+   ],
+   "E_gs": [
+    1.6479,
+    -0.1287,
+    -1.2046,
+    -1.8153,
+    -2.2119,
+    -2.2112,
+    -1.9796,
+    -1.6486
+   ],
+   "E_T": [
+    3.266,
+    2.936,
+    2.651,
+    2.403,
+    2.049,
+    1.821,
+    1.518,
+    1.257
+   ],
+   "weight_T": [
+    0.85,
+    0.83,
+    0.81,
+    0.79,
+    0.77,
+    0.76,
+    0.78,
+    0.81
+   ],
+   "E_S": [
+    3.926,
+    3.698,
+    3.487,
+    3.303,
+    3.044,
+    null,
+    null,
+    null
+   ],
+   "weight_S": [
+    0.64,
+    0.65,
+    0.62,
+    0.58,
+    0.51,
+    0.45,
+    0.36,
+    0.46
+   ],
+   "E_cov": [
+    4.9139,
+    2.8073,
+    1.4464,
+    0.5877,
+    -0.1629,
+    -0.3902,
+    -0.4616,
+    -0.3916
+   ],
+   "U": [
+    0.66,
+    0.762,
+    0.836,
+    0.9,
+    0.995,
+    null,
+    null,
+    null
+   ],
+   "t": [
+    1.790413,
+    1.647523,
+    1.5202,
+    1.408644,
+    1.248715,
+    null,
+    null,
+    null
+   ],
+   "flagged": [
+    {
+     "R": 2.6,
+     "E_S": 2.883,
+     "weight_S": 0.45,
+     "U": 1.062,
+     "t": 1.145638,
+     "why": "singlet weight below 0.5"
+    },
+    {
+     "R": 2.8,
+     "E_S": 2.682,
+     "weight_S": 0.36,
+     "U": 1.164,
+     "t": 1.00887,
+     "why": "singlet weight below 0.5"
+    },
+    {
+     "R": 3.0,
+     "E_S": 4.693,
+     "weight_S": 0.46,
+     "U": 3.436,
+     "t": 1.214403,
+     "why": "root jump"
+    }
+   ],
+   "applied": true,
+   "why_not_applied": "",
+   "carriers": {
+    "R": [
+     2.0,
+     2.1,
+     2.2,
+     2.3,
+     2.47,
+     2.6,
+     2.8,
+     3.0
+    ],
+    "EA": [
+     1.355,
+     1.485,
+     1.604,
+     1.715,
+     1.893,
+     2.022,
+     2.211,
+     2.389
+    ],
+    "IP": [
+     9.937,
+     9.718,
+     9.538,
+     9.39,
+     9.192,
+     9.073,
+     8.922,
+     8.793
+    ],
+    "method": "PBE; cation def2-TZVP, anion def2-TZVPD (def2 ECP for Ag, Au); both resonance states by symmetry-constrained UKS; vertical EA and IP of the pair on the exact atomic values; tools/electrostatics/pair_one_carrier_curve.py"
+   },
+   "entries": {
+    "R": [
+     2.0,
+     2.1,
+     2.2,
+     2.3,
+     2.47,
+     2.6,
+     2.8,
+     3.0
+    ],
+    "rho_minus": [
+     2.5256994781982436,
+     2.0293211766574584,
+     1.6850614700708304,
+     1.4307358615864607,
+     1.1173543459006892,
+     0.9416915104541017,
+     0.7345967596091514,
+     0.5855280786795647
+    ],
+    "rho_plus": [
+     1.2848349561548584,
+     1.4626622126860251,
+     1.5911258117474372,
+     1.6513371062944264,
+     1.6268349753429554,
+     1.5354426131453511,
+     1.3355136206785616,
+     1.124970840818758
+    ],
+    "lambda_ionic": [
+     0.9445320242588969,
+     0.7006927814622815,
+     0.4587991322689872,
+     0.25733353777762935,
+     0.008386358483284192,
+     -0.12978618582337825,
+     -0.30048843489002997,
+     -0.4434740733280919
+    ],
+    "options": {
+     "anchor": "formal",
+     "fragment_ensemble": "diabatic",
+     "carrier_penetration": true,
+     "carrier_overlap": "gordon_kim",
+     "pauli_table": "first_principles",
+     "carrier_induction": true,
+     "state_polarizability": true,
+     "state_polarizability_stiffness": "onsite",
+     "frame_induction_damping": true,
+     "frame_polarizability_anchor": true,
+     "frame_polarizability_scope": "ions",
+     "bond_partition": true,
+     "exclusion": false,
+     "frame_pair": true,
+     "spin_pairing": true,
+     "max_charge": 3,
+     "state_polarizability_element": true,
+     "gaussian_a": 0.5
+    },
+    "solved_with": {
+     "data_files": {
+      "ion_densities.npz": "6c95034f343fd5ab750490e97c660a198976f4d558e501a94837f2c9f0e6dc25",
+      "pauli_fp.npz": "7fb1d586242481586d2fcec7b3428ea142e0766e5d284165303031aca12e8c5d",
+      "ion_polarizabilities.json": "8ab2f88115010f1de253ac96cdf61b209b4722199919ddf3f8ae0b7871de2bfa",
+      "frame_pair.npz": "c6a96e6efb632b0c96c22b954e103cfd0435b4ba47feb485b583562a212eeba1"
+     },
+     "E_gs": [
+      1.6479,
+      -0.1287,
+      -1.2046,
+      -1.8153,
+      -2.2119,
+      -2.2112,
+      -1.9796,
+      -1.6486
+     ],
+     "E_T": [
+      3.266,
+      2.936,
+      2.651,
+      2.403,
+      2.049,
+      1.821,
+      1.518,
+      1.257
+     ],
+     "t": [
+      1.790413,
+      1.647523,
+      1.5202,
+      1.408644,
+      1.248715,
+      1.1437550082137717,
+      0.9992426860471287,
+      0.8729893538809842
+     ],
+     "EA": [
+      1.355,
+      1.485,
+      1.604,
+      1.715,
+      1.893,
+      2.022,
+      2.211,
+      2.389
+     ],
+     "IP": [
+      9.937,
+      9.718,
+      9.538,
+      9.39,
+      9.192,
+      9.073,
+      8.922,
+      8.793
+     ],
+     "rho": [
+      3.5016976643807087,
+      2.9416173078840244,
+      2.514750096425444,
+      2.1668867632121946,
+      1.6833936207161435,
+      1.3754468683701155,
+      0.9727466580113737,
+      0.647880611721009
+     ]
+    },
+    "built": {
+     "kT": 0.1,
+     "selection_amplitude_off": 0.05,
+     "selection_amplitude_on": 0.2,
+     "coupling_cutoff": 4.0,
+     "largest_residual_eV": 5.67377256288637e-11,
+     "largest_difference_between_two_seeded_modules_eV": 8.881784197001252e-16,
+     "two_far_neutral_atoms_eV": 0.0,
+     "package_energies_without_the_entries": {
+      "R": [
+       2.0,
+       2.1,
+       2.2,
+       2.3,
+       2.47,
+       2.6,
+       2.8,
+       3.0
+      ],
+      "q": [
+       0,
+       -1,
+       1
+      ],
+      "E": [
+       [
+        1.187982807686078,
+        2.8185994781982435,
+        12.869734956154858
+       ],
+       [
+        -0.45723494798527753,
+        0.41562117665745824,
+        11.051962212686025
+       ],
+       [
+        -1.4112443857329326,
+        -1.1235385299291698,
+        9.924525811747438
+       ],
+       [
+        -1.926520316542148,
+        -2.0995641384135393,
+        9.226037106294427
+       ],
+       [
+        -2.2152772952328004,
+        -2.9875456540993106,
+        8.606934975342956
+       ],
+       [
+        -2.1617027223119565,
+        -3.2915084895458984,
+        8.397242613145352
+       ],
+       [
+        -1.8746084384053756,
+        -3.4560032403908485,
+        8.277913620678563
+       ],
+       [
+        -1.508741346752064,
+        -3.4520719213204347,
+        8.269370840818757
+       ]
+      ]
+     }
+    }
+   }
+  }
+ }
+}

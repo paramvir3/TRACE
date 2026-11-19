@@ -79,14 +79,48 @@ def _tiny_inputs():
     return pad_lammps_inputs(raw, MAX_ATOMS, MAX_EDGES, R_MAX)
 
 
+def _aoti_packaging_available() -> bool:
+    """Whether this torch can build a ``.pt2`` AOTInductor package.
+
+    ``transformers_ace.aot.compile_aot_force_program`` imports
+    ``torch._inductor.package.package_aoti``, which older torch releases do not
+    have -- torch 2.2.0 raises ``ModuleNotFoundError: No module named
+    'torch._inductor.package'``.  Without a guard the module-scoped fixture below
+    raises during setup, so the four tests that use it report as ERRORS rather
+    than as what they are: a capability this interpreter does not have.
+    """
+    try:
+        import torch._inductor.package  # noqa: F401
+    except Exception:
+        return False
+    return True
+
+
 @pytest.fixture(scope="module")
 def exported(tmp_path_factory):
-    program = _tiny_program()
-    inputs = _tiny_inputs()
-    reference = program(*inputs)
-    package = compile_aot_force_program(
-        program, inputs, tmp_path_factory.mktemp("aot") / "tiny.pt2"
-    )
+    if not _aoti_packaging_available():
+        pytest.skip(
+            f"torch {torch.__version__} has no torch._inductor.package, so the "
+            "AOTInductor .pt2 package the LAMMPS pair style loads cannot be "
+            "built here. This is the CUDA/AOT deployment path only; eager "
+            "training and inference are unaffected and are covered by the rest "
+            "of this suite. Install a torch new enough to provide "
+            "torch._inductor.package to run these."
+        )
+    # Module-scoped, so it is built before the per-test dtype isolation of
+    # tests/conftest.py runs: pin the float32 default this deployment path is
+    # written for, whatever an earlier test left, and restore it afterwards.
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float32)
+    try:
+        program = _tiny_program()
+        inputs = _tiny_inputs()
+        reference = program(*inputs)
+        package = compile_aot_force_program(
+            program, inputs, tmp_path_factory.mktemp("aot") / "tiny.pt2"
+        )
+    finally:
+        torch.set_default_dtype(previous)
     return package, inputs, reference
 
 

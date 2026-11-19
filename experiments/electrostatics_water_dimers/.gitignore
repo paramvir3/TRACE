@@ -1,0 +1,7 @@
+# Derived from training_examples/water_ccsd/MB-pol-1250.xyz, whose source and licence are not documented: not
+# distributed (README.md, note at the top). Run output and logs stay local too.
+data/
+data_qm/
+runs/
+*.log
+*.out

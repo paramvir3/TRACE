@@ -17,7 +17,13 @@ from transformers_ace.aot import (
     pad_lammps_inputs,
 )
 from transformers_ace import TransformersACECalculator
-from transformers_ace.deploy import LAMMPSEnergyModel, LAMMPSAOTForceModel, _example_tensors, _synthetic_atoms
+from transformers_ace.deploy import (
+    LAMMPSEnergyModel,
+    LAMMPSAOTForceModel,
+    _example_tensors,
+    _synthetic_atoms,
+    refuse_electrostatics,
+)
 
 
 def _metadata(
@@ -69,6 +75,9 @@ def compile_lammps_aot_model(
         )
 
     calculator = TransformersACECalculator(model_path=str(checkpoint), device=device)
+    # Before make_aot_compatible touches the model: its rewrites would otherwise
+    # reach the electrostatic heads first and fail on something unrelated.
+    refuse_electrostatics(calculator.model, "compile_lammps_aot_model")
     # LAMMPSEnergyModel supports v2, v3 and v4; v2 is the production architecture
     # of the manuscript, so it must be exportable. The AOT-compatible rewrites in
     # make_aot_compatible cover every module v2 uses (o3.Linear,

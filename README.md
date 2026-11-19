@@ -289,6 +289,118 @@ variable, and the 640-atom CsPbI3 starting structure. The exact macOS
 LAMMPS+PLUMED CMake build recipe is documented in
 [docs/LAMMPS.md](docs/LAMMPS.md).
 
+<!-- BEGIN TRACE-Electrostatics release block -->
+## TRACE-Electrostatics
+
+Long-range electrostatics, polarisation, charge transfer and integer charge states (redox) for TRACE. TRACE's
+attention layers supply every per-atom and per-bond parameter. The electrostatic energy is minimised exactly, in
+float64. Forces, stress, Born charges and polarisabilities are therefore exact derivatives of one energy.
+Research release: [checkpoints (v0.1)](https://github.com/paramvir3/TRACE/releases/tag/trace-electrostatics-v0.1).
+
+### Model
+
+**Bound sector** (`trace_electrostatics`):
+
+```
+E_elec = min_m ½ mᵀ K m + cᵀ m,   m = (t, μ̂, Θ̂),   q = B diag(f) t + ρ
+```
+
+- t are split charges on bonds, B is the bond incidence matrix and f the dissociation envelope.
+- μ̂ and Θ̂ are the induced dipoles and quadrupoles.
+- K is the Gaussian-multipole Coulomb (Gram) matrix plus the hardness terms. It is positive definite under the
+  Gaussian kernel.
+
+**Free-charge sector** (`trace_redox`, SPEC §0). n is a configuration of integer unit charges:
+
+```
+E(n) = Σ_u ε_u(n_u) + ½ q(n)ᵀ J q(n) − ½ s(n)ᵀ K(n)⁻¹ s(n) + Σ_{u<v} O_uv(n_u, n_v)
+H_nm = ± σ_nm f_nm τ_uv,      E_total = E_short + F,      F = −kT ln Tr exp(−H/kT)
+```
+
+- ε_u: the isolated-ion energies.
+- O_uv: Gordon–Kim overlap and penetration, tabulated from first-principles charge-state densities.
+- τ_uv: the one-electron hops.
+
+### Benchmarks
+
+The test sets are the 4G-HDNNP charge-transfer sets (Ko et al., *Nat. Commun.* **12**, 398 (2021); Materials Cloud
+2020.137, CC BY 4.0) and MgO phonons against PBE (Togo, NIMS MDR, CC BY 4.0).
+- **Errors** are RMSE on held-out test sets.
+- **PFN NequIP values** were digitised from PFN's blog figure.
+- **Seeds:** the Au₂/MgO models were trained with two seeds each.
+
+**Cluster sets, PFN training sizes.** Pooled force RMSE (eV/Å) and the NaCl charge-transfer shift (Å). One model
+per system, one seed.
+
+| | Ag₃± | NaCl | C₁₀H₂/C₁₀H₃⁺ | NaCl shift |
+|---|---|---|---|---|
+| DFT | | | | 0.107 |
+| 4G-HDNNP | 0.031 | 0.0329 | 0.0757 | 0.109 |
+| best PFN NequIP variant | 0.0204 | 0.0104 | 0.0495 | |
+| TRACE (local) | 1.892 | 0.0553 | 0.0805 | 0 |
+| **TRACE-Electrostatics** | **0.0159** | **0.0068** | **0.0356** | **0.104** |
+
+**Au₂ on MgO(001), Al-doped and undoped** (Table II of Ko et al.). The dopant moves an electron onto Au₂ and flips the
+preferred adsorption geometry. wet = E(wetting) − E(non-wetting), in meV. T5 = wet_d − wet_u. Each TRACE cell gives
+seed 42 / seed 43.
+
+The released model is `AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt` (and `_s42`) on the release page, built from
+`experiments/benchmarks_4g/configs/AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.yaml`. `RedoxConfig()` defaults alone do not
+build it: load the checkpoint, or train from that config.
+
+| | wet_u | wet_d | T5 (% DFT) | test F RMSE undoped / doped (eV/Å) | Au–Au force at 2.089 Å (eV/Å) |
+|---|---|---|---|---|---|
+| DFT (PBE) | +928.9 | −2.7 | 100 | | +15.25 |
+| 4G-HDNNP | +975.4 | −41.0 | 109.1 | | |
+| **TRACE-Electrostatics** | +610.4 / +729.7 | +92.3 / −27.7 | 55.6 / 81.3 | 0.0845 / 0.1242; 0.0616 / 0.1112 | +14.25 / +15.82 |
+| earlier variant ᵃ | +851.0 / +920.4 | −177.4 / −75.7 | 110.4 / 106.9 | 0.0614 / 0.0867; 0.0776 / 0.1045 | — / +6.18 |
+
+ᵃ The same code with an older term set: no coupling bound, cluster space, Fermi band, frame-induction damping and
+anchor, spin pairing, frame-pair or two-site terms. Kept for comparison; it is not the released model.
+
+**Bulk MgO phonons against PBE.** The NAC correction uses each model's own Z* and ε∞. Force constants are on PBE's
+own 4×4×4 supercell (512 atoms). There are seven pre-registered criteria (P0–P6). Same models as above, seed 42 / seed 43.
+
+| | Z*(Mg) | ε∞ | TO / LO at Γ (cm⁻¹) | path RMS, NAC (cm⁻¹) | criteria |
+|---|---|---|---|---|---|
+| PBE | 1.992 | 3.235 | 373.3 / 681.3 | | |
+| **TRACE-Electrostatics** | 1.950 / 1.961 | 3.334 / 3.300 | 382.1 / 669.3; 370.3 / 667.4 | 8.5 / 8.8 | 7 / 7 both |
+| earlier variant ᵃ | 2.402 / 2.534 | 3.025 / 3.002 | 384.3 / 807.9; 398.7 / 851.5 | 28.9 / 53.9 | 3 / 7, 2 / 7 |
+
+![MgO phonons of TRACE-Electrostatics against DFT (PBE), without and with NAC](docs/electrostatics/figures/mgo_phonons_vs_pbe.png)
+
+TRACE-Electrostatics (red, dashed) against DFT (PBE, black). Without NAC (left), the top branch near Γ follows the
+supercell's own interpolation, so it matches PBE only on the same 512-atom supercell. With NAC (right), the LO–TO
+splitting comes from the model's own Born charges and ε∞. Made by `experiments/benchmarks_phonons/plot_release_phonons.py`.
+
+### Verdict and limitations
+
+- **Cluster sets:** the lowest force error of all compared models on all three sets, and the DFT charge-transfer shift
+  in NaCl. Caveats: one seed, separate models, an older equation stack.
+- **Au₂/MgO:** no model passes every pre-registered criterion on both seeds.
+  - The released model is right on the phonons, the Au–Au repulsion and gas-phase Au₂. But wet_u is 199–319 meV low.
+  - The earlier variant is right on Table II. Its phonons and its Au–Au wall fail.
+  - The pooled test force error, 0.075–0.106 eV/Å from 300 training structures, has not reached 4G-HDNNP's 0.067 from
+    about 4,500.
+- **Charge on Au₂:** the doped Au₂ carries a full electron (−1.00 e against Hirshfeld's −0.27; Hirshfeld is
+  partition-dependent).
+- **Not implemented:** ASE only (no LAMMPS export with electrostatics); trained at Γ.
+
+Every result, failures included: [BENCHMARKS.md](docs/electrostatics/BENCHMARKS.md).
+
+### Reproduce
+
+```bash
+git clone -b trace-electrostatics https://github.com/paramvir3/TRACE.git && cd TRACE
+python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pip install --no-deps -e .
+python -m pytest tests -q -p no:cacheprovider --ignore=tests/run_lammps
+```
+
+- Data download and checksums, configs, training and scoring: [REPRODUCE.md](docs/electrostatics/REPRODUCE.md).
+- Checkpoints: [MODELS.md](docs/electrostatics/MODELS.md).
+- User guide: [TRACE_ELECTROSTATICS.md](TRACE_ELECTROSTATICS.md).
+<!-- END TRACE-Electrostatics release block -->
+
 ## Compatibility
 
 These imports are equivalent:

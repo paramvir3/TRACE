@@ -16,6 +16,25 @@ from ase.neighborlist import neighbor_list
 from transformers_ace import TransformersACECalculator
 
 
+def refuse_electrostatics(model: nn.Module, what: str) -> None:
+    """Refuse to export a model that has trace_electrostatics attached.
+
+    The deploy wrappers rebuild the energy from the local TRACE layers only
+    (``emb``, ``ace``, ``layers``, ``readout``), so exporting such a model would
+    silently drop the long-range electrostatic energy together with its forces
+    and virial -- a different potential from the one that was trained.
+    """
+    if getattr(model, "electrostatics", None) is not None:
+        raise NotImplementedError(
+            f"{what}: this model has trace_electrostatics attached "
+            "(model.electrostatics). The LAMMPS TorchScript/AOT export rebuilds the "
+            "energy from the local TRACE layers only, so the electrostatic energy, "
+            "forces and virial would be silently dropped, and exporting the "
+            "electrostatic solve is not supported. Evaluate this checkpoint with the "
+            "ASE calculator (transformers_ace.TransformersACECalculator) instead."
+        )
+
+
 class LAMMPSEnergyModel(nn.Module):
     """Energy-only deploy wrapper for native LAMMPS pair styles.
 
@@ -31,6 +50,7 @@ class LAMMPSEnergyModel(nn.Module):
         energy_shift_per_atom: float = 0.0,
     ) -> None:
         super().__init__()
+        refuse_electrostatics(model, "LAMMPSEnergyModel")
         self.architecture_version = int(getattr(model, "architecture_version", 0))
         if self.architecture_version not in (2, 3, 4):
             raise ValueError("LAMMPSEnergyModel supports TRACE architecture versions 2 and 3")
@@ -232,6 +252,7 @@ def export_lammps_model(
 ) -> None:
     calculator = TransformersACECalculator(model_path=str(checkpoint), device=device)
     model = calculator.model.eval()
+    refuse_electrostatics(model, "export_lammps_model")
     if int(getattr(model, "architecture_version", 0)) not in (2, 3, 4):
         raise ValueError("Native LAMMPS export supports architecture_version=2, 3, or 4 checkpoints")
     for parameter in model.parameters():

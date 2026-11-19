@@ -230,6 +230,37 @@ class ExportableSphericalHarmonics(nn.Module):
         return torch.stack(values, dim=-1)
 
 
+def _script_function_memo(model: nn.Module) -> dict:
+    """A ``deepcopy`` memo that SHARES any ``torch.jit.ScriptFunction`` it finds.
+
+    ``e3nn`` 0.6.x caches a compiled ``ScriptFunction`` on ``o3.SphericalHarmonics``
+    (``sph_func``); 0.4.x does not.  ``torch.jit.ScriptFunction`` refuses to
+    pickle -- ``ScriptFunction cannot be pickled`` -- so a plain
+    ``copy.deepcopy`` of a TRACE model raises on 0.6.x and the whole AOT export
+    path, LAMMPS deployment included, stops working.  That is a production
+    break, not a test break, which is why the fix is here rather than in a test.
+
+    Pre-seeding the memo with ``{id(f): f}`` tells ``deepcopy`` that each
+    ScriptFunction has "already been copied" to itself, so it is shared instead
+    of pickled.  Sharing is sound: a ScriptFunction is immutable compiled code
+    with no tensor state to alias, and every module that carries one here --
+    ``SphericalHarmonics`` -- is replaced outright by an ``Exportable*``
+    equivalent a few lines below, so the shared object does not survive into the
+    returned model at all.
+
+    On 0.4.x the walk finds nothing and the memo is empty, so this is exactly
+    the call it replaces.  Written against the module ``__dict__`` rather than a
+    recursive container walk because that is where e3nn puts it, and a general
+    walk would have to guard against cycles for no gain.
+    """
+    memo: dict = {}
+    for module in model.modules():
+        for value in vars(module).values():
+            if isinstance(value, torch.jit.ScriptFunction):
+                memo[id(value)] = value
+    return memo
+
+
 def make_aot_compatible(model: nn.Module) -> nn.Module:
     """Return a frozen TRACE copy with export-safe equivariant primitives."""
 
@@ -240,7 +271,7 @@ def make_aot_compatible(model: nn.Module) -> nn.Module:
     from flashace.model import freeze_layer_scales
 
     freeze_layer_scales(model)
-    converted = copy.deepcopy(model).eval()
+    converted = copy.deepcopy(model, _script_function_memo(model)).eval()
 
     def replace(module: nn.Module) -> None:
         for name, child in tuple(module.named_children()):

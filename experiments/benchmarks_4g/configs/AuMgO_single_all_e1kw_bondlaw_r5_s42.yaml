@@ -1,0 +1,158 @@
+# AuMgO_single_all_e1kw_bondlaw_r5_s42: sanitised training config of a released TRACE-Electrostatics run.
+# Step 33, stage B: stage A's weights, energy weight 1000, 20 epochs, lr 1e-4 cosine to 5e-6.
+# Released checkpoint: AuMgO_single_all_e1kw_bondlaw_r5_s42.pt (docs/electrostatics/MODELS.md), the best checkpoint by validation loss,
+# epoch 15 of 20; place it at runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/model.pt to score it.
+#
+# Warm-start parent: runs/AuMgO_single_all_bondlaw_r5_s42/model.pt (its best checkpoint).  Build the warm start first:
+#     python make_warm_start.py runs/AuMgO_single_all_bondlaw_r5_s42/model.pt runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/warm_start.pt --archive-name warm_from_single_a_s42
+# (weights and stored config of the parent, epoch 0, no optimiser or scheduler state).
+# The published warm start was written on the GPU host by the training queue (the same recipe) and its
+# sha256 was not recorded; torch 2.2.0 on the Mac writes sha256 5f2fc42666edd5e171ec14121f72ebe0a1cd4f1090a2598b70aaa646b50c5572, with the same content.
+# Published run: the GPU host (one RTX 5060 Ti, 16 GB; torch 2.11.0+cu128), both seeds at once on the one card,
+# PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True, with `device: cuda`.  The `device: cpu` below is the key as it
+# stands in the run's recorded config (the copy kept with its results); set `device: cuda` to train on a GPU.
+# How this file was translated for the GPU host (absolute paths, device) is not recorded in a script; every
+# recorded translation of this line (e.g. step 34b's) changed only the absolute paths and set `device: cuda`.
+# Retraining is not bitwise reproducible (GPU reductions, transient NaN recomputations); the reported numbers were
+# measured on the released checkpoint, not on a retraining.
+# Command (from experiments/benchmarks_4g; every path in this file is relative to that directory):
+#     mkdir -p runs/AuMgO_single_all_e1kw_bondlaw_r5_s42 && cp configs/AuMgO_single_all_e1kw_bondlaw_r5_s42.yaml runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/config.yaml
+#     python run_train_nanguard.py runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/config.yaml > runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/log.txt 2>&1
+# (make the warm start before this command; resume_from below names it).
+#
+# Differences from the published config.yaml: every path made relative to experiments/benchmarks_4g
+# (train / valid files, response-prior files, model_save_path, checkpoint_dir, plot_dir, and resume_from renamed to the warm_start.pt that make_warm_start.py writes);
+# no key added or removed, no other value changed.
+amp_dtype: bfloat16
+amsgrad: true
+architecture_version: 2
+atomic_energies: null
+attention_distance_penalty: true
+attention_dropout: 0.03
+attention_ffn_hidden: null
+attention_key_dim: null
+attention_layer_scale_init: 0.01
+attention_num_heads: 2
+aux_force_weight: 0.0
+aux_stress_weight: 0.0
+batch_seeded_rng: true
+batch_size: 1
+batched_graphs: true
+checkpoint_dir: runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/checkpoints
+checkpoint_interval: 0
+clip_grad_norm: 1.0
+correlation_channels: 16
+correlation_order: 4
+device: cpu
+displacement_prob: 0.0
+displacement_sigma: 0.0
+early_stopping_min_delta: 0.0
+early_stopping_min_epoch: 1
+early_stopping_patience: 0
+electrostatics:
+  config:
+    bond_screening:
+    - 2.0
+    - 2.8
+  dielectric_prior:
+    file: ../benchmarks_phonons/data/MgO_bulk_eps_prior_pbe.xyz
+    weight: 0.05
+  enabled: true
+  heads:
+    bond_hardness_law: two_level
+  partial_charge_weight: 0.0
+  polarizability_prior:
+    file: data/Au_atom_alpha_prior.xyz
+    weight: 0.3
+  redox:
+    anchor: formal
+    band_form: fermi
+    bond_partition: true
+    bond_pauli: true
+    bond_pauli_level: almo
+    bond_pauli_wall: true
+    carrier_band: true
+    carrier_induction: true
+    carrier_overlap: gordon_kim
+    carrier_penetration: true
+    coupling_bound: harrison
+    couplings: true
+    diabatic_selection: amplitude
+    diabatic_space: clusters
+    exclusion: false
+    fragment_ensemble: diabatic
+    frame_induction_damping: true
+    frame_polarizability_anchor: true
+    frame_polarizability_scope: ions
+    max_charge: 3
+    pauli_table: first_principles
+    shift_gate: true
+    state_polarizability: true
+    state_polarizability_elements:
+    - 79
+    - 8
+    state_polarizability_stiffness: onsite
+energy_shift_per_atom: null
+energy_weight: 1000.0
+epochs: 20
+force_consistency_weight: 0.0
+forces_weight: 1.0
+forces_weight_decay_epochs: 0
+forces_weight_final: 1.0
+gaussian_width: 0.5
+grad_accum_steps: 8
+hidden_dim: 64
+l_max: 2
+learning_rate: 0.0001
+lr_min: 5.0e-06
+lr_restart_mult: 1.0
+lr_scheduler_interval: epoch
+lr_scheduler_t_max: 20
+lr_scheduler_use_restarts: false
+lr_warmup_epochs: 0
+lr_warmup_start_factor: 0.1
+model_save_path: runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/model.pt
+muon_aux_betas:
+- 0.9
+- 0.95
+muon_aux_eps: 1.0e-10
+muon_exclude: []
+muon_include: []
+muon_momentum: 0.95
+muon_nesterov: true
+muon_ns_dtype: auto
+muon_ns_steps: 5
+muon_parameter_mode: hidden
+num_layers: 1
+num_radial: 12
+num_workers: 0
+optimizer: muon
+plot_dir: runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/plots
+plot_training_curves: true
+precompute_neighbors: true
+r_max: 5.29
+radial_basis_type: bessel
+radial_mlp_hidden: 32
+radial_mlp_layers: 2
+radial_trainable: false
+random_rotation: false
+redox_kT_epochs: null
+redox_kT_start: null
+resume_from: runs/AuMgO_single_all_e1kw_bondlaw_r5_s42/warm_start.pt
+save_last_checkpoint: true
+seed: 42
+sobolev_sigma: 0.02
+sobolev_weight: 0.0
+solve_atomic_energies: true
+stress_weight: 0.0
+stress_weight_final: 0.0
+stress_weight_ramp_epochs: 0
+temperature_scale_end: 1.0
+temperature_scale_epochs: 0
+temperature_scale_start: 1.0
+torch_num_interop_threads: 1
+torch_num_threads: 4
+train_file: ../benchmarks_phonons/data/AuMgO_bulkaugw_train.xyz
+use_amp: false
+valid_file: ../benchmarks_phonons/data/AuMgO_bulkaugw_valid.xyz
+weight_decay: 1.0e-05

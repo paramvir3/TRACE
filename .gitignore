@@ -88,6 +88,10 @@ tests/run_lammps/benchmark_aot/log.*
 experiments/**/runs/
 experiments/**/logs/
 experiments/**/smoke/
+# Derived from Materials Cloud 2020.137 (CC-BY-4.0) by prepare.py; regenerate, do not commit.
+experiments/benchmarks_4g/data/
+experiments/benchmarks_4g/data_pfn/
+experiments/benchmarks_4g/data_cs/
 output/pdf/*.bbl
 output/pdf/*.blg
 output/pdf/*.fdb_latexmk
@@ -95,3 +99,25 @@ output/pdf/*.fls
 output/pdf/*Notes.bib
 # Generated thermodynamic-integration and enhanced-sampling trajectories
 tests/cspbi3/free_energy_ti*/runs/
+
+# Isolated environments of external reference codes; rebuilt on demand
+validation/**/.venv-ref/
+
+# Third-party raw downloads and the data derived from them are not redistributed:
+# download them and run the derivation scripts (docs/electrostatics/REPRODUCE.md).
+# Raw inputs: $TRACE_4G_RAW and $TRACE_PHONON_RAW default to these directories.
+experiments/benchmarks_4g/raw/
+experiments/benchmarks_4g/data_mace/
+experiments/benchmarks_phonons/raw/
+experiments/benchmarks_phonons/data/*.xyz
+experiments/electrostatics_water_dimers/data/
+experiments/electrostatics_water_dimers/data_qm/
+*.aselmdb
+# First-principles cache of tools/electrostatics ($TRACE_FP_CACHE defaults to ./fp_cache)
+fp_cache/
+*.chk
+# Local validation workspaces of external reference codes
+validation/
+# Python packaging build output
+/build/
+/dist/
