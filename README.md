@@ -344,30 +344,37 @@ per system, one seed.
 preferred adsorption geometry. wet = E(wetting) − E(non-wetting), in meV. T5 = wet_d − wet_u. Each TRACE cell gives
 seed 42 / seed 43.
 
+The released model is `AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.pt` (and `_s42`) on the release page, built from
+`experiments/benchmarks_4g/configs/AuMgO_twosite_bf055_e1kw_bondlaw_r5_s43.yaml`. `RedoxConfig()` defaults alone do not
+build it: load the checkpoint, or train from that config.
+
 | | wet_u | wet_d | T5 (% DFT) | test F RMSE undoped / doped (eV/Å) | Au–Au force at 2.089 Å (eV/Å) |
 |---|---|---|---|---|---|
 | DFT (PBE) | +928.9 | −2.7 | 100 | | +15.25 |
 | 4G-HDNNP | +975.4 | −41.0 | 109.1 | | |
-| step 34b (current equations) | +610.4 / +729.7 | +92.3 / −27.7 | 55.6 / 81.3 | 0.0845 / 0.1242; 0.0616 / 0.1112 | +14.25 / +15.82 |
-| step 31 | +851.0 / +920.4 | −177.4 / −75.7 | 110.4 / 106.9 | 0.0614 / 0.0867; 0.0776 / 0.1045 | — / +6.18 |
+| **TRACE-Electrostatics** | +610.4 / +729.7 | +92.3 / −27.7 | 55.6 / 81.3 | 0.0845 / 0.1242; 0.0616 / 0.1112 | +14.25 / +15.82 |
+| earlier variant ᵃ | +851.0 / +920.4 | −177.4 / −75.7 | 110.4 / 106.9 | 0.0614 / 0.0867; 0.0776 / 0.1045 | — / +6.18 |
+
+ᵃ The same code with an older term set: no coupling bound, cluster space, Fermi band, frame-induction damping and
+anchor, spin pairing, frame-pair or two-site terms. Kept for comparison; it is not the released model.
 
 **Bulk MgO phonons against PBE.** The NAC correction uses each model's own Z* and ε∞. Force constants are on PBE's
-own 4×4×4 supercell (512 atoms). There are seven pre-registered criteria (P0–P6).
+own 4×4×4 supercell (512 atoms). There are seven pre-registered criteria (P0–P6). Same models as above, seed 42 / seed 43.
 
 | | Z*(Mg) | ε∞ | TO / LO at Γ (cm⁻¹) | path RMS, NAC (cm⁻¹) | criteria |
 |---|---|---|---|---|---|
 | PBE | 1.992 | 3.235 | 373.3 / 681.3 | | |
-| step 34b s42 / s43 | 1.950 / 1.961 | 3.334 / 3.300 | 382.1 / 669.3; 370.3 / 667.4 | 8.5 / 8.8 | 7 / 7 both |
-| step 31 s42 / s43 | 2.402 / 2.534 | 3.025 / 3.002 | 384.3 / 807.9; 398.7 / 851.5 | 28.9 / 53.9 | 3 / 7, 2 / 7 |
+| **TRACE-Electrostatics** | 1.950 / 1.961 | 3.334 / 3.300 | 382.1 / 669.3; 370.3 / 667.4 | 8.5 / 8.8 | 7 / 7 both |
+| earlier variant ᵃ | 2.402 / 2.534 | 3.025 / 3.002 | 384.3 / 807.9; 398.7 / 851.5 | 28.9 / 53.9 | 3 / 7, 2 / 7 |
 
 ### Verdict and limitations
 
 - **Cluster sets:** the lowest force error of all compared models on all three sets, and the DFT charge-transfer shift
   in NaCl. Caveats: one seed, separate models, an older equation stack.
 - **Au₂/MgO:** no model passes every pre-registered criterion on both seeds.
-  - Step 34b is right on the phonons, the Au–Au repulsion and gas-phase Au₂. But wet_u is 199–319 meV low.
-  - Step 31 is right on Table II. Its phonons and its Au–Au wall fail.
-  - Its pooled test force error, 0.075–0.106 eV/Å from 300 training structures, has not reached 4G-HDNNP's 0.067 from
+  - The released model is right on the phonons, the Au–Au repulsion and gas-phase Au₂. But wet_u is 199–319 meV low.
+  - The earlier variant is right on Table II. Its phonons and its Au–Au wall fail.
+  - The pooled test force error, 0.075–0.106 eV/Å from 300 training structures, has not reached 4G-HDNNP's 0.067 from
     about 4,500.
 - **Charge on Au₂:** the doped Au₂ carries a full electron (−1.00 e against Hirshfeld's −0.27; Hirshfeld is
   partition-dependent).
